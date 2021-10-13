@@ -1,0 +1,56 @@
+[tool.poetry]
+name = "fastapi-idempotency-header"
+version = "0.1.0"
+description = "Enables idempotent operations in POST and PATCH endpoints."
+authors = ["Sondre Lillebø Gundersen <sondrelg@live.no>"]
+license = "BSD-3"
+keywords = ["idempotence", "idempotency", "fastapi", "header", "middleware", "api", "endpoint", "http"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Typing :: Typed",
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+fastapi = "^0.70.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+coverage = "^6.0.2"
+pre-commit = "^2.15.0"
+httpx = "^0.20.0"
+pytest-cov = "^3.0.0"
+pytest-asyncio = "^0.15.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.coverage.run]
+omit = []
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "if TYPE_CHECKING:",
+    "pragma: no cover",
+]
