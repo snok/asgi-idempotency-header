@@ -1,9 +1,10 @@
+import json
 import logging
 import uuid
 from typing import Any, Callable, Optional, TypeVar
 
 from fastapi import FastAPI, Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, Response, StreamingResponse
 
 from .handlers.base import Handler
 
@@ -29,7 +30,7 @@ def get_idempotency_header_middleware(
     idempotency_header_key: str = 'Idempotency-Key',
     replay_header_key: str = 'Idempotent-Replayed',
     enforce_uuid4_formatting: bool = False,
-    expiry: Optional[int] = None,
+    expiry: Optional[int] = 60 * 60 * 24,
 ) -> None:
     h = handler()
 
@@ -53,27 +54,32 @@ def get_idempotency_header_middleware(
             )
 
         elif stored_response := h.get_stored_response(idempotency_key):
-            logger.info('Returning stored response from idempotency key %s', idempotency_key)
+            logger.info("Returning stored response from idempotency key '%s'", idempotency_key)
             stored_response.headers[replay_header_key] = 'true'
             return stored_response
 
         elif h.is_key_pending(idempotency_key):
             logger.warning(
-                'Returning 409 since a request is already in progress for idempotency key %s', idempotency_key
+                "Returning 409 since a request is already in progress for idempotency key '%s'", idempotency_key
             )
-            return JSONResponse(
-                {'detail': f"Request already pending for idempotency key '{idempotency_header_key}'."}, 409
-            )
+            return JSONResponse({'detail': f"Request already pending for idempotency key '{idempotency_key}'."}, 409)
 
         else:
             # Store key before calling the endpoint, so we can reject following requests with a 409 like above
             h.store_idempotency_key(idempotency_key)
 
             # Call the endpoint
-            fresh_response: Response = await call_next(request)
+            response: StreamingResponse = await call_next(request)
+
+            # TODO: Find out how to handle other responses than JSONResponse
+            byte_payload = [item async for item in response.body_iterator][0]
+            json_payload = json.loads(byte_payload)
+            status_code = response.status_code
 
             # Store and clean up before returning the response to the user
-            logger.info('Storing response for idempotency key %s', idempotency_key)
-            h.store_response_data(idempotency_key, fresh_response, expiry)
+            logger.info("Storing response for idempotency key '%s'", idempotency_key)
+            h.store_response_data(
+                idempotency_key=idempotency_key, payload=json_payload, status_code=status_code, expiry=expiry
+            )
             h.clear_idempotency_key(idempotency_key)
-            return fresh_response
+            return JSONResponse(json_payload, status_code)

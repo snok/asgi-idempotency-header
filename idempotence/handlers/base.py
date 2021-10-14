@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from starlette.responses import JSONResponse, Response
+from starlette.responses import Response
 
 
 class Handler(ABC):
@@ -13,7 +13,9 @@ class Handler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def store_response_data(self, idempotency_key: str, response: JSONResponse, expiry: Optional[int] = None) -> None:
+    def store_response_data(
+        self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
+    ) -> None:
         """
         Store a response to an appropriate backend (redis, postgres, etc.).
         """

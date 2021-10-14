@@ -3,7 +3,6 @@ repos:
     rev: 21.9b0
     hooks:
       - id: black
-        args: [ "--quiet", '--experimental-string-processing' ]
 
   - repo: https://github.com/pycqa/isort
     rev: 5.9.3

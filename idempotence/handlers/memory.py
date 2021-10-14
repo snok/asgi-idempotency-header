@@ -2,7 +2,6 @@ import time
 from typing import Any, Dict, Optional, Set
 
 from fastapi.responses import JSONResponse
-from starlette.responses import Response
 
 from idempotence.handlers.base import Handler
 
@@ -22,29 +21,32 @@ class MemoryHandler(Handler):
     response_store: Dict[str, Dict[str, Any]] = {}
     keys: Set[str] = set()
 
-    def get_stored_response(self, idempotency_key: str) -> Optional[Response]:
+    def get_stored_response(self, idempotency_key: str) -> Optional[JSONResponse]:
         """
         Return a stored response if it exists, otherwise return None.
         """
         if idempotency_key not in self.response_store:
             return None
 
-        if (expiry := self.response_store[idempotency_key]['expiry']) and expiry >= time.time():
+        if (expiry := self.response_store[idempotency_key]['expiry']) and expiry <= time.time():
             del self.response_store[idempotency_key]
+            return None
 
         return JSONResponse(
-            content=self.response_store[idempotency_key]['json'],
+            self.response_store[idempotency_key]['json'],
             status_code=self.response_store[idempotency_key]['status_code'],
         )
 
-    def store_response_data(self, idempotency_key: str, response: JSONResponse, expiry: Optional[int] = None) -> None:
+    def store_response_data(
+        self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
+    ) -> None:
         """
         Store a response in memory.
         """
         self.response_store[idempotency_key] = {
             'expiry': time.time() + expiry if expiry else None,
-            'json': response.json(),
-            'status_code': response.status_code,
+            'json': payload,
+            'status_code': status_code,
         }
 
     def store_idempotency_key(self, idempotency_key: str) -> None:

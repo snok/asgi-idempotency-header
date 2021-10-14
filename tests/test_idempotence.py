@@ -17,10 +17,14 @@ async def test_idempotence_no_stored_response(client: AsyncClient, caplog) -> No
     assert response.json() == {'thisIs': 'aTest'}
     assert dict(response.headers) == {'content-length': '18', 'content-type': 'application/json'}
 
-    assert caplog.messages[0] == 'Storing response for idempotency key test'
+    assert caplog.messages[0] == "Storing response for idempotency key 'test'"
 
     response = await client.post('/test', headers={'Idempotency-Key': 'test'})
     assert response.json() == {'thisIs': 'aTest'}
-    assert dict(response.headers) == {'content-length': '18', 'content-type': 'application/json'}
+    assert dict(response.headers) == {
+        'content-length': '18',
+        'content-type': 'application/json',
+        'idempotent-replayed': 'true',
+    }
 
-    assert caplog.messages[2] == 'Storing response for idempotency key test'
+    assert caplog.messages[2] == "Returning stored response from idempotency key 'test'"

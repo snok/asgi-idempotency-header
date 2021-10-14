@@ -38,6 +38,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 120
 skip-string-normalization = true
+experimental-string-processing = true
+quiet = true
 
 [tool.isort]
 profile = "black"
