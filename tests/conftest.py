@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 from starlette.responses import JSONResponse
 
+from idempotence.handlers.memory import MemoryHandler
 from idempotence.middleware import get_idempotency_header_middleware
 
 logger = logging.getLogger('sanity_html')
@@ -21,7 +22,7 @@ def create() -> JSONResponse:
     return JSONResponse({'thisIs': 'aTest'}, 201)
 
 
-get_idempotency_header_middleware(app)
+get_idempotency_header_middleware(app, handler=MemoryHandler)
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -32,6 +33,6 @@ def event_loop():
 
 
 @pytest.fixture(scope='module')
-async def client():
+async def client() -> AsyncClient:
     async with AsyncClient(app=app, base_url='http://test') as client:
         yield client
