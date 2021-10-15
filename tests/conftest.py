@@ -8,8 +8,8 @@ from fastapi.responses import ORJSONResponse
 from httpx import AsyncClient
 from starlette.responses import HTMLResponse, JSONResponse, Response
 
-from idempotence.handlers.memory import MemoryHandler
-from idempotence.middleware import get_idempotency_header_middleware
+from idempotency_header.handlers.memory import MemoryHandler
+from idempotency_header.middleware import get_idempotency_header_middleware
 
 logger = logging.getLogger('sanity_html')
 

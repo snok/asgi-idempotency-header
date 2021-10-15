@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Set
 
 from fastapi.responses import JSONResponse
 
-from idempotence.handlers.base import Handler
+from idempotency_header.handlers.base import Handler
 
 
 class MemoryHandler(Handler):
