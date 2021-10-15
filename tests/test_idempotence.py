@@ -1,30 +1,52 @@
 import pytest
 from httpx import AsyncClient
 
+from tests.conftest import dummy_response
 
-@pytest.mark.asyncio
+pytestmark = pytest.mark.asyncio
+
+
 async def test_no_idempotence(client: AsyncClient) -> None:
-    response = await client.post('/test')
+    response = await client.post('/json-response')
     assert response.json() == {'thisIs': 'aTest'}
     assert dict(response.headers) == {'content-length': '18', 'content-type': 'application/json'}
 
 
-@pytest.mark.asyncio
-async def test_idempotence_no_stored_response(client: AsyncClient, caplog) -> None:
+async def test_idempotence_works_for_json_responses(client: AsyncClient, caplog) -> None:
     caplog.set_level('DEBUG')
 
-    response = await client.post('/test', headers={'Idempotency-Key': 'test'})
-    assert response.json() == {'thisIs': 'aTest'}
-    assert dict(response.headers) == {'content-length': '18', 'content-type': 'application/json'}
+    for i, url in enumerate(
+        ['/json-response', '/dict-response', '/normal-response', '/normal-byte-response', '/orjson-response']
+    ):
+        caplog.clear()
+        idempotency_header = {'Idempotency-Key': f'test{i}'}
 
-    assert caplog.messages[0] == "Storing response for idempotency key 'test'"
+        # First request
+        response = await client.post(url, headers=idempotency_header)
+        assert response.json() == dummy_response
+        assert 'idempotent-replayed' not in dict(response.headers)
+        assert caplog.messages[0] == f"Storing response for idempotency key 'test{i}'"
 
-    response = await client.post('/test', headers={'Idempotency-Key': 'test'})
-    assert response.json() == {'thisIs': 'aTest'}
-    assert dict(response.headers) == {
-        'content-length': '18',
-        'content-type': 'application/json',
-        'idempotent-replayed': 'true',
-    }
+        # Second request
+        response = await client.post(url, headers=idempotency_header)
+        assert response.json() == dummy_response
+        assert dict(response.headers)['idempotent-replayed'] == 'true'
+        assert caplog.messages[2] == f"Returning stored response from idempotency key 'test{i}'"
 
-    assert caplog.messages[2] == "Returning stored response from idempotency key 'test'"
+
+async def test_idempotence_doesnt_work_for_non_json_responses(client: AsyncClient, caplog) -> None:
+    caplog.set_level('DEBUG')
+
+    for i, url in enumerate(['/xml-response', '/html-response', '/bad-response']):
+        caplog.clear()
+        idempotency_header = {'Idempotency-Key': f'test{i+100}'}
+
+        # First request
+        response = await client.post(url, headers=idempotency_header)
+        assert 'idempotent-replayed' not in dict(response.headers)
+        assert caplog.messages[0] == 'Cannot handle non-JSON response. Returning early.'
+
+        # Second request
+        response = await client.post(url, headers=idempotency_header)
+        assert 'idempotent-replayed' not in dict(response.headers)
+        assert caplog.messages[0] == 'Cannot handle non-JSON response. Returning early.'

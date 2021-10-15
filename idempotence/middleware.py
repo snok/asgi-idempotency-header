@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from json import JSONDecodeError
 from typing import Any, Callable, Optional, TypeVar
 
 from fastapi import FastAPI, Request
@@ -71,15 +72,27 @@ def get_idempotency_header_middleware(
             # Call the endpoint
             response: StreamingResponse = await call_next(request)
 
-            # TODO: Find out how to handle other responses than JSONResponse
+            headers = dict(response.headers)
             byte_payload = [item async for item in response.body_iterator][0]
-            json_payload = json.loads(byte_payload)
-            status_code = response.status_code
+
+            if 'content-type' not in headers:
+                try:
+                    json_payload = json.loads(byte_payload)
+                except JSONDecodeError:
+                    logger.debug('Failed to decode payload as JSON. Returning early.')
+                    h.clear_idempotency_key(idempotency_key)
+                    return response
+            elif headers['content-type'] != 'application/json':
+                logger.info('Cannot handle non-JSON response. Returning early.')
+                h.clear_idempotency_key(idempotency_key)
+                return response
+            else:
+                json_payload = json.loads(byte_payload)
 
             # Store and clean up before returning the response to the user
             logger.info("Storing response for idempotency key '%s'", idempotency_key)
             h.store_response_data(
-                idempotency_key=idempotency_key, payload=json_payload, status_code=status_code, expiry=expiry
+                idempotency_key=idempotency_key, payload=json_payload, status_code=response.status_code, expiry=expiry
             )
             h.clear_idempotency_key(idempotency_key)
-            return JSONResponse(json_payload, status_code)
+            return JSONResponse(json_payload, response.status_code)
