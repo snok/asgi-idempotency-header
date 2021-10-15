@@ -16,7 +16,14 @@ async def test_idempotence_works_for_json_responses(client: AsyncClient, caplog)
     caplog.set_level('DEBUG')
 
     for i, url in enumerate(
-        ['/json-response', '/dict-response', '/normal-response', '/normal-byte-response', '/orjson-response']
+        [
+            '/json-response',
+            '/dict-response',
+            '/normal-response',
+            '/normal-byte-response',
+            '/orjson-response',
+            '/ujson-response',
+        ]
     ):
         caplog.clear()
         idempotency_header = {'Idempotency-Key': f'test{i}'}
@@ -34,12 +41,20 @@ async def test_idempotence_works_for_json_responses(client: AsyncClient, caplog)
         assert caplog.messages[2] == f"Returning stored response from idempotency key 'test{i}'"
 
 
-async def test_idempotence_doesnt_work_for_non_json_responses(client: AsyncClient, caplog) -> None:
+async def test_idempotence_doesnt_work_for_non_json_responses_wrong_media(client: AsyncClient, caplog) -> None:
     caplog.set_level('DEBUG')
 
-    for i, url in enumerate(['/xml-response', '/html-response', '/bad-response']):
+    for i, url in enumerate(
+        [
+            '/xml-response',
+            '/html-response',
+            '/bad-response',
+            '/file-response',
+            '/plain-text-response',
+        ]
+    ):
         caplog.clear()
-        idempotency_header = {'Idempotency-Key': f'test{i+100}'}
+        idempotency_header = {'Idempotency-Key': f'test{i + 100}'}
 
         # First request
         response = await client.post(url, headers=idempotency_header)
@@ -50,3 +65,26 @@ async def test_idempotence_doesnt_work_for_non_json_responses(client: AsyncClien
         response = await client.post(url, headers=idempotency_header)
         assert 'idempotent-replayed' not in dict(response.headers)
         assert caplog.messages[0] == 'Cannot handle non-JSON response. Returning early.'
+
+
+async def test_idempotence_doesnt_work_for_non_json_responses_bad_encoding(client: AsyncClient, caplog) -> None:
+    caplog.set_level('DEBUG')
+
+    for i, url in enumerate(
+        [
+            '/redirect-response',
+            '/streaming-response',
+        ]
+    ):
+        caplog.clear()
+        idempotency_header = {'Idempotency-Key': f'test{i + 100}'}
+
+        # First request
+        response = await client.post(url, headers=idempotency_header)
+        assert 'idempotent-replayed' not in dict(response.headers)
+        assert caplog.messages[0] == 'Failed to decode payload as JSON. Returning early.'
+
+        # Second request
+        response = await client.post(url, headers=idempotency_header)
+        assert 'idempotent-replayed' not in dict(response.headers)
+        assert caplog.messages[0] == 'Failed to decode payload as JSON. Returning early.'

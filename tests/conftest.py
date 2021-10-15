@@ -1,12 +1,21 @@
 import asyncio
 import json
 import logging
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, UJSONResponse
 from httpx import AsyncClient
-from starlette.responses import HTMLResponse, JSONResponse, Response
+from starlette.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 
 from idempotency_header.handlers.memory import MemoryHandler
 from idempotency_header.middleware import get_idempotency_header_middleware
@@ -66,6 +75,11 @@ async def create_orjson_response():
     return dummy_response
 
 
+@app.post('/ujson-response', response_class=UJSONResponse)
+async def create_ujson_response():
+    return dummy_response
+
+
 @app.post('/html-response', response_class=HTMLResponse)
 async def create_html_response():
     return """
@@ -78,6 +92,32 @@ async def create_html_response():
         </body>
     </html>
     """
+
+
+@app.post('/file-response', response_class=FileResponse)
+async def create_file_response():
+    path = Path(__file__)
+    return path.parent / 'image.jpeg'
+
+
+@app.post('/plain-text-response', response_class=FileResponse)
+async def create_plaintext_response():
+    return PlainTextResponse('test')
+
+
+@app.post('/redirect-response', response_class=FileResponse)
+async def create_redirect_response():
+    return RedirectResponse('test')
+
+
+async def fake_video_streamer():
+    for _ in range(10):
+        yield b'some fake video bytes'
+
+
+@app.post('/streaming-response', response_class=FileResponse)
+async def create_streaming_response():
+    return StreamingResponse(fake_video_streamer())
 
 
 get_idempotency_header_middleware(app, handler=MemoryHandler)
