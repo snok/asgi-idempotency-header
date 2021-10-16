@@ -22,7 +22,7 @@ def validate_uuid(uuid_: str) -> bool:
         return False
 
 
-T = TypeVar('T', bound=type[Handler])
+T = TypeVar('T', bound=Handler)
 
 
 def get_idempotency_header_middleware(
@@ -33,8 +33,6 @@ def get_idempotency_header_middleware(
     enforce_uuid4_formatting: bool = False,
     expiry: Optional[int] = 60 * 60 * 24,
 ) -> None:
-    h = handler()
-
     @app.middleware('http')
     async def idempotency_header_middleware(request: Request, call_next: Callable[[Request], Any]) -> Response:
         """
@@ -53,19 +51,19 @@ def get_idempotency_header_middleware(
                 {'detail': f"'{idempotency_header_key}' header value must be formatted as a v4 UUID."}, 422
             )
 
-        if stored_response := h.get_stored_response(idempotency_key):
+        if stored_response := await handler.get_stored_response(idempotency_key):
             logger.info("Returning stored response from idempotency key '%s'", idempotency_key)
             stored_response.headers[replay_header_key] = 'true'
             return stored_response
 
-        if h.is_key_pending(idempotency_key):
+        if await handler.is_key_pending(idempotency_key):
             logger.warning(
                 "Returning 409 since a request is already in progress for idempotency key '%s'", idempotency_key
             )
             return JSONResponse({'detail': f"Request already pending for idempotency key '{idempotency_key}'."}, 409)
 
         # Store key before calling the endpoint, so we can reject following requests with a 409 like above
-        h.store_idempotency_key(idempotency_key)
+        await handler.store_idempotency_key(idempotency_key)
 
         # Call the endpoint
         response: StreamingResponse = await call_next(request)
@@ -78,19 +76,19 @@ def get_idempotency_header_middleware(
                 json_payload = json.loads(byte_payload)
             except JSONDecodeError:
                 logger.debug('Failed to decode payload as JSON. Returning early.')
-                h.clear_idempotency_key(idempotency_key)
+                await handler.clear_idempotency_key(idempotency_key)
                 return response
         elif headers['content-type'] != 'application/json':
             logger.info('Cannot handle non-JSON response. Returning early.')
-            h.clear_idempotency_key(idempotency_key)
+            await handler.clear_idempotency_key(idempotency_key)
             return response
         else:
             json_payload = json.loads(byte_payload)
 
         # Store and clean up before returning the response to the user
         logger.info("Storing response for idempotency key '%s'", idempotency_key)
-        h.store_response_data(
+        await handler.store_response_data(
             idempotency_key=idempotency_key, payload=json_payload, status_code=response.status_code, expiry=expiry
         )
-        h.clear_idempotency_key(idempotency_key)
+        await handler.clear_idempotency_key(idempotency_key)
         return JSONResponse(json_payload, response.status_code)

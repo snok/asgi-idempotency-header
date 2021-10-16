@@ -31,18 +31,42 @@ async def test_memory_handler():
 
     # Test setting and clearing key
     id_ = uuid4()
-    h.store_idempotency_key(id_)
-    assert h.is_key_pending(id_) is True
-    h.clear_idempotency_key(id_)
-    assert h.is_key_pending(id_) is False
+    await h.store_idempotency_key(id_)
+    assert (await h.is_key_pending(id_)) is True
+    await h.clear_idempotency_key(id_)
+    assert (await h.is_key_pending(id_)) is False
 
     # Test storing and fetching response data
-    h.store_response_data(id_, {'test': 'test'}, 201)
-    stored_response = h.get_stored_response(id_)
+    await h.store_response_data(id_, {'test': 'test'}, 201)
+    stored_response = await h.get_stored_response(id_)
     assert stored_response.status_code == 201
     assert stored_response.body == b'{"test":"test"}'
 
     # Test fetching data after expiry
-    h.store_response_data(id_, {'test': 'test'}, 201, expiry=1)
+    await h.store_response_data(id_, {'test': 'test'}, 201, expiry=1)
     await asyncio.sleep(1)
-    assert h.get_stored_response(id_) is None
+    assert (await h.get_stored_response(id_)) is None
+
+
+async def test_aioredis_handler():
+    assert issubclass(MemoryHandler, Handler)
+
+    h = MemoryHandler()
+
+    # Test setting and clearing key
+    id_ = uuid4()
+    await h.store_idempotency_key(id_)
+    assert (await h.is_key_pending(id_)) is True
+    await h.clear_idempotency_key(id_)
+    assert (await h.is_key_pending(id_)) is False
+
+    # Test storing and fetching response data
+    await h.store_response_data(id_, {'test': 'test'}, 201)
+    stored_response = await h.get_stored_response(id_)
+    assert stored_response.status_code == 201
+    assert stored_response.body == b'{"test":"test"}'
+
+    # Test fetching data after expiry
+    await h.store_response_data(id_, {'test': 'test'}, 201, expiry=1)
+    await asyncio.sleep(1)
+    assert (await h.get_stored_response(id_)) is None

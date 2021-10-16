@@ -21,7 +21,7 @@ class MemoryHandler(Handler):
     response_store: Dict[str, Dict[str, Any]] = {}
     keys: Set[str] = set()
 
-    def get_stored_response(self, idempotency_key: str) -> Optional[JSONResponse]:
+    async def get_stored_response(self, idempotency_key: str) -> Optional[JSONResponse]:
         """
         Return a stored response if it exists, otherwise return None.
         """
@@ -37,7 +37,7 @@ class MemoryHandler(Handler):
             status_code=self.response_store[idempotency_key]['status_code'],
         )
 
-    def store_response_data(
+    async def store_response_data(
         self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
     ) -> None:
         """
@@ -49,19 +49,19 @@ class MemoryHandler(Handler):
             'status_code': status_code,
         }
 
-    def store_idempotency_key(self, idempotency_key: str) -> None:
+    async def store_idempotency_key(self, idempotency_key: str) -> None:
         """
         Store an idempotency key header value in a set.
         """
         self.keys.add(idempotency_key)
 
-    def clear_idempotency_key(self, idempotency_key: str) -> None:
+    async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
         Remove an idempotency header value from the set.
         """
         self.keys.remove(idempotency_key)
 
-    def is_key_pending(self, idempotency_key: str) -> bool:
+    async def is_key_pending(self, idempotency_key: str) -> bool:
         """
         Check whether a key exists in our set or not.
         """

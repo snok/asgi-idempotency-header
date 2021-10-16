@@ -6,14 +6,14 @@ from starlette.responses import Response
 
 class Handler(ABC):
     @abstractmethod
-    def get_stored_response(self, idempotency_key: str) -> Optional[Response]:
+    async def get_stored_response(self, idempotency_key: str) -> Optional[Response]:
         """
         Return a stored response if it exists, otherwise return None.
         """
         raise NotImplementedError()
 
     @abstractmethod
-    def store_response_data(
+    async def store_response_data(
         self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
     ) -> None:
         """
@@ -22,7 +22,7 @@ class Handler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def store_idempotency_key(self, idempotency_key: str) -> None:
+    async def store_idempotency_key(self, idempotency_key: str) -> None:
         """
         Store an idempotency key header value in a set.
 
@@ -35,7 +35,7 @@ class Handler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def clear_idempotency_key(self, idempotency_key: str) -> None:
+    async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
         Remove an idempotency header value from a set.
 
@@ -45,7 +45,7 @@ class Handler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def is_key_pending(self, idempotency_key: str) -> bool:
+    async def is_key_pending(self, idempotency_key: str) -> bool:
         """
         Check whether a key exists in our set or not.
         """

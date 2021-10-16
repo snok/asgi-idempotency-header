@@ -3,6 +3,7 @@ import json
 import logging
 from pathlib import Path
 
+import aioredis as aioredis
 import pytest
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse, UJSONResponse
@@ -21,13 +22,14 @@ from idempotency_header.handlers.memory import MemoryHandler
 from idempotency_header.middleware import get_idempotency_header_middleware
 
 logger = logging.getLogger('sanity_html')
-
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
 app = FastAPI()
 
-dummy_response = {'thisIs': 'aTest'}
+dummy_response = {'test': 'test'}
+
+redis = aioredis.from_url('redis://localhost')
 
 
 @app.post('/json-response')
@@ -131,7 +133,7 @@ async def create_streaming_response():
     return StreamingResponse(fake_video_streamer())
 
 
-get_idempotency_header_middleware(app, enforce_uuid4_formatting=True, handler=MemoryHandler)
+get_idempotency_header_middleware(app, enforce_uuid4_formatting=True, handler=MemoryHandler())
 
 
 @pytest.fixture(scope='session', autouse=True)
