@@ -110,6 +110,17 @@ async def create_redirect_response():
     return RedirectResponse('test')
 
 
+@app.get('/get-endpoint', response_class=JSONResponse)
+async def get_endpoint():
+    return {'test': 'test'}
+
+
+@app.post('/slow-endpoint', response_class=JSONResponse)
+async def slow_endpoint():
+    await asyncio.sleep(1)
+    return {'test': 'test'}
+
+
 async def fake_video_streamer():
     for _ in range(10):
         yield b'some fake video bytes'
@@ -120,7 +131,7 @@ async def create_streaming_response():
     return StreamingResponse(fake_video_streamer())
 
 
-get_idempotency_header_middleware(app, handler=MemoryHandler)
+get_idempotency_header_middleware(app, enforce_uuid4_formatting=True, handler=MemoryHandler)
 
 
 @pytest.fixture(scope='session', autouse=True)
