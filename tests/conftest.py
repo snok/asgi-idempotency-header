@@ -3,7 +3,6 @@ import json
 import logging
 from pathlib import Path
 
-import aioredis as aioredis
 import pytest
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse, UJSONResponse
@@ -28,8 +27,6 @@ logger.addHandler(logging.StreamHandler())
 app = FastAPI()
 
 dummy_response = {'test': 'test'}
-
-redis = aioredis.from_url('redis://localhost')
 
 
 @app.post('/json-response')

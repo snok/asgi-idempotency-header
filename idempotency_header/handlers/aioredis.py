@@ -1,12 +1,10 @@
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
+from aioredis.client import Redis
 from fastapi.responses import JSONResponse
 
 from idempotency_header.handlers.base import Handler
-
-if TYPE_CHECKING:
-    from aioredis import Redis
 
 
 class RedisHandler(Handler):
@@ -35,7 +33,7 @@ class RedisHandler(Handler):
         else:
             status_code = await self.redis.get(status_code_key)
 
-        return JSONResponse(payload, status_code=status_code)
+        return JSONResponse(json.loads(payload), status_code=int(status_code))
 
     async def store_response_data(
         self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
@@ -46,7 +44,7 @@ class RedisHandler(Handler):
         payload_key, status_code_key = self.get_keys(idempotency_key)
 
         await self.redis.set(payload_key, json.dumps(payload))
-        await self.redis.set(status_code_key, json.dumps(payload))
+        await self.redis.set(status_code_key, status_code)
 
         if expiry:
             await self.redis.expire(payload_key, expiry)
@@ -68,4 +66,5 @@ class RedisHandler(Handler):
         """
         Check whether a key exists in our set or not.
         """
-        return bool(await self.redis.getset(self.KEYS_KEY, idempotency_key))
+        keys = await self.redis.smembers(self.KEYS_KEY)
+        return idempotency_key in keys

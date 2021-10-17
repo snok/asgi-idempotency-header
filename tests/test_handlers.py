@@ -1,8 +1,10 @@
 import asyncio
 from uuid import uuid4
 
+import fakeredis.aioredis
 import pytest
 
+from idempotency_header.handlers.aioredis import RedisHandler
 from idempotency_header.handlers.base import Handler
 from idempotency_header.handlers.memory import MemoryHandler
 
@@ -30,7 +32,7 @@ async def test_memory_handler():
     h = MemoryHandler()
 
     # Test setting and clearing key
-    id_ = uuid4()
+    id_ = str(uuid4())
     await h.store_idempotency_key(id_)
     assert (await h.is_key_pending(id_)) is True
     await h.clear_idempotency_key(id_)
@@ -51,10 +53,12 @@ async def test_memory_handler():
 async def test_aioredis_handler():
     assert issubclass(MemoryHandler, Handler)
 
-    h = MemoryHandler()
+    redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+
+    h = RedisHandler(redis=redis)
 
     # Test setting and clearing key
-    id_ = uuid4()
+    id_ = str(uuid4())
     await h.store_idempotency_key(id_)
     assert (await h.is_key_pending(id_)) is True
     await h.clear_idempotency_key(id_)
