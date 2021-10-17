@@ -52,6 +52,7 @@ fakeredis = "^1.6.1"
 fastapi = ["fastapi"]
 starlette = ["starlette"]
 aioredis = ["aioredis", "lupa"]
+all = ["aioredis", "lupa", "fastapi", "starlette"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -45,7 +45,7 @@ jobs:
           key: ${{ hashFiles('**/poetry.lock') }}-1
       - run: poetry install --no-interaction --no-root
         if: steps.cache-venv.outputs.cache-hit != 'true'
-      - run: poetry install --no-interaction
+      - run: poetry install --no-interaction --extras all
       - name: Run tests
         run: |
           source .venv/bin/activate
