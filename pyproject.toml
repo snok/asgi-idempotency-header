@@ -61,9 +61,7 @@ profile = "black"
 line_length = 120
 
 [tool.coverage.run]
-omit = [
-    'idempotency_header/handlers/base.py'
-]
+omit = []
 branch = true
 
 [tool.coverage.report]
