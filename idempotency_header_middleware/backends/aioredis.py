@@ -5,7 +5,7 @@ from aioredis.client import Redis
 from aioredis.exceptions import LockError
 from fastapi.responses import JSONResponse
 
-from idempotency_header.backends.base import Backend
+from idempotency_header_middleware.backends.base import Backend
 
 
 class AioredisBackend(Backend):

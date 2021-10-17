@@ -4,9 +4,9 @@ from uuid import uuid4
 import fakeredis.aioredis
 import pytest
 
-from idempotency_header.backends.aioredis import AioredisBackend
-from idempotency_header.backends.base import Backend
-from idempotency_header.backends.memory import MemoryBackend
+from idempotency_header_middleware.backends.aioredis import AioredisBackend
+from idempotency_header_middleware.backends.base import Backend
+from idempotency_header_middleware.backends.memory import MemoryBackend
 from tests.conftest import dummy_response
 
 pytestmark = pytest.mark.asyncio

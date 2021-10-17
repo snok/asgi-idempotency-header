@@ -19,8 +19,8 @@ from starlette.responses import (
     StreamingResponse,
 )
 
-from idempotency_header.backends.aioredis import AioredisBackend
-from idempotency_header.middleware import IdempotencyHeaderMiddleware
+from idempotency_header_middleware.backends.aioredis import AioredisBackend
+from idempotency_header_middleware.middleware import IdempotencyHeaderMiddleware
 
 logger = logging.getLogger('sanity_html')
 logger.setLevel(logging.DEBUG)

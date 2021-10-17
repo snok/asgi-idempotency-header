@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Set
 
 from starlette.responses import JSONResponse
 
-from idempotency_header.backends.base import Backend
+from idempotency_header_middleware.backends.base import Backend
 
 
 class MemoryBackend(Backend):

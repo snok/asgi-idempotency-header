@@ -10,7 +10,7 @@ from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from idempotency_header.backends.base import Backend
+from idempotency_header_middleware.backends.base import Backend
 
 logger = logging.getLogger('asgi_idempotency_header')
 
