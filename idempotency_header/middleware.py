@@ -1,18 +1,20 @@
 import json
 import logging
 import uuid
+from collections import namedtuple
 from json import JSONDecodeError
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Optional, TypeVar, Union
 
-from fastapi import FastAPI, Request
-from starlette.responses import JSONResponse, Response, StreamingResponse
+from starlette.datastructures import Headers
+from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from idempotency_header.handlers.base import Handler
+from idempotency_header.backends.base import Backend
 
-logger = logging.getLogger('fastapi_idempotency_header')
+logger = logging.getLogger('idempotency_header_middleware')
 
 
-def validate_uuid(uuid_: str) -> bool:
+def is_valid_uuid(uuid_: str) -> bool:
     """
     Validate string as uuid4.
     """
@@ -22,73 +24,97 @@ def validate_uuid(uuid_: str) -> bool:
         return False
 
 
-T = TypeVar('T', bound=Handler)
+T = TypeVar('T', bound=Backend)
 
 
-def get_idempotency_header_middleware(
-    app: FastAPI,
-    handler: T,
-    idempotency_header_key: str = 'Idempotency-Key',
-    replay_header_key: str = 'Idempotent-Replayed',
-    enforce_uuid4_formatting: bool = False,
-    expiry: Optional[int] = 60 * 60 * 24,
-) -> None:
-    @app.middleware('http')
-    async def idempotency_header_middleware(request: Request, call_next: Callable[[Request], Any]) -> Response:
+class IdempotencyHeaderMiddleware:
+    def __init__(
+        self,
+        app: ASGIApp,
+        backend: T,
+        idempotency_header_key: str = 'Idempotency-Key',
+        replay_header_key: str = 'Idempotent-Replayed',
+        enforce_uuid4_formatting: bool = False,
+        expiry: Optional[int] = 60 * 60 * 24,
+    ) -> None:
+        self.app = app
+        self.backend = backend
+        self.idempotency_header_key = idempotency_header_key
+        self.replay_header_key = replay_header_key
+        self.enforce_uuid4_formatting = enforce_uuid4_formatting
+        self.expiry = expiry
+        self.status_codes: dict[str, int] = {}
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Union[JSONResponse, Any]:
         """
         Enable idempotent operations in POST and PATCH endpoints.
         """
-        if request.method not in ['POST', 'PATCH']:
+        if scope['type'] != 'http' or scope['method'] not in ['POST', 'PATCH']:
             logger.debug('Returning response directly since request method is already idempotent')
-            return await call_next(request)
+            return await self.app(scope, receive, send)
 
-        if not (idempotency_key := request.headers.get(idempotency_header_key.lower())):
+        request_headers = Headers(scope=scope)
+        idempotency_key = request_headers.get(self.idempotency_header_key.lower())
+
+        if not idempotency_key:
             logger.debug('Returning response directly since no idempotency key is present in the request headers')
-            return await call_next(request)
-        elif enforce_uuid4_formatting and not validate_uuid(idempotency_key):
+            return await self.app(scope, receive, send)
+
+        elif self.enforce_uuid4_formatting and not is_valid_uuid(idempotency_key):
             logger.warning('Returning 422 since idempotency key is malformed')
-            return JSONResponse(
-                {'detail': f"'{idempotency_header_key}' header value must be formatted as a v4 UUID."}, 422
-            )
+            payload = {'detail': f"'{self.idempotency_header_key}' header value must be formatted as a v4 UUID"}
+            response = JSONResponse(payload, 422)
+            return await response(scope, receive, send)
 
-        if stored_response := await handler.get_stored_response(idempotency_key):
+        if stored_response := await self.backend.get_stored_response(idempotency_key):
             logger.info("Returning stored response from idempotency key '%s'", idempotency_key)
-            stored_response.headers[replay_header_key] = 'true'
-            return stored_response
+            stored_response.headers[self.replay_header_key] = 'true'
+            return await stored_response(scope, receive, send)
 
-        if await handler.is_key_pending(idempotency_key):
-            logger.warning(
-                "Returning 409 since a request is already in progress for idempotency key '%s'", idempotency_key
-            )
-            return JSONResponse({'detail': f"Request already pending for idempotency key '{idempotency_key}'."}, 409)
+        request_already_pending = await self.backend.store_idempotency_key(idempotency_key)
 
-        # Store key before calling the endpoint, so we can reject following requests with a 409 like above
-        await handler.store_idempotency_key(idempotency_key)
+        if request_already_pending:
+            msg = "Returning 409 since a request is already in progress for idempotency key '%s'"
+            logger.warning(msg, idempotency_key)
+            payload = {'detail': f"Request already pending for idempotency key '{idempotency_key}'"}
+            response = JSONResponse(payload, 409)
+            return await response(scope, receive, send)
 
-        # Call the endpoint
-        response: StreamingResponse = await call_next(request)
+        response_state = namedtuple('response_state', ['status_code', 'response_headers', 'expiry'])
+        response_state.expiry = self.expiry
 
-        headers = dict(response.headers)
-        byte_payload = [item async for item in response.body_iterator][0]
+        async def send_wrapper(message: Message) -> None:
+            if message['type'] == 'http.response.start':
+                response_state.status_code = message['status']
+                response_state.response_headers = Headers({k.decode(): v.decode() for (k, v) in message['headers']})
 
-        if 'content-type' not in headers:
-            try:
-                json_payload = json.loads(byte_payload)
-            except JSONDecodeError:
-                logger.debug('Failed to decode payload as JSON. Returning early.')
-                await handler.clear_idempotency_key(idempotency_key)
-                return response
-        elif headers['content-type'] != 'application/json':
-            logger.info('Cannot handle non-JSON response. Returning early.')
-            await handler.clear_idempotency_key(idempotency_key)
-            return response
-        else:
-            json_payload = json.loads(byte_payload)
+            elif message['type'] == 'http.response.body':
+                if (
+                    'content-type' in response_state.response_headers
+                    and response_state.response_headers['content-type'] != 'application/json'
+                ):
+                    logger.info('Cannot handle non-JSON response. Returning early.')
+                    await self.backend.clear_idempotency_key(idempotency_key)
+                    await send(message)
+                    return
 
-        # Store and clean up before returning the response to the user
-        logger.info("Storing response for idempotency key '%s'", idempotency_key)
-        await handler.store_response_data(
-            idempotency_key=idempotency_key, payload=json_payload, status_code=response.status_code, expiry=expiry
-        )
-        await handler.clear_idempotency_key(idempotency_key)
-        return JSONResponse(json_payload, response.status_code)
+                try:
+                    json_payload = json.loads(message['body'])
+                except JSONDecodeError:
+                    logger.debug('Failed to decode payload as JSON. Returning early.')
+                    await self.backend.clear_idempotency_key(idempotency_key)
+                    await send(message)
+                    return
+
+                logger.info("Storing response for idempotency key '%s'", idempotency_key)
+                await self.backend.store_response_data(
+                    idempotency_key=idempotency_key,
+                    payload=json_payload,
+                    status_code=response_state.status_code,
+                    expiry=response_state.expiry,
+                )
+                await self.backend.clear_idempotency_key(idempotency_key)
+
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)

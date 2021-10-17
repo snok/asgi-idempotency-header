@@ -19,14 +19,22 @@ from starlette.responses import (
     StreamingResponse,
 )
 
-from idempotency_header.handlers.memory import MemoryHandler
-from idempotency_header.middleware import get_idempotency_header_middleware
+from idempotency_header.backends.aioredis import AioredisBackend
+from idempotency_header.middleware import IdempotencyHeaderMiddleware
 
 logger = logging.getLogger('sanity_html')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
-app = FastAPI()
+app = FastAPI(
+    middleware=[
+        Middleware(
+            IdempotencyHeaderMiddleware,
+            enforce_uuid4_formatting=True,
+            backend=AioredisBackend(redis=fakeredis.aioredis.FakeRedis(decode_responses=True)),
+        )
+    ]
+)
 
 dummy_response = {'test': 'test'}
 
@@ -143,12 +151,10 @@ async def fake_video_streamer():
         yield b'some fake video bytes'
 
 
+@app.patch('/streaming-response', response_class=FileResponse)
 @app.post('/streaming-response', response_class=FileResponse)
 async def create_streaming_response():
     return StreamingResponse(fake_video_streamer())
-
-
-get_idempotency_header_middleware(app, enforce_uuid4_formatting=True, handler=MemoryHandler())
 
 
 @pytest.fixture(scope='session', autouse=True)
