@@ -30,24 +30,18 @@ json_response_endpoints = [
 
 @pytest.mark.parametrize('method', methods)
 @pytest.mark.parametrize('endpoint', json_response_endpoints)
-async def test_idempotence_works_for_json_responses(client: AsyncClient, caplog, method: str, endpoint: str) -> None:
-    caplog.set_level('DEBUG')
+async def test_idempotence_works_for_json_responses(client: AsyncClient, method: str, endpoint: str) -> None:
     idempotency_header = {'Idempotency-Key': uuid4().hex}
 
     # First request
     response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
     assert response.json() == dummy_response
     assert 'idempotent-replayed' not in dict(response.headers)
-    assert caplog.messages[0] == f"Storing response for idempotency key '{idempotency_header['Idempotency-Key']}'"
 
     # Second request
     response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
     assert response.json() == dummy_response
     assert dict(response.headers)['idempotent-replayed'] == 'true'
-    assert (
-        caplog.messages[2]
-        == f"Returning stored response from idempotency key '{idempotency_header['Idempotency-Key']}'"
-    )
 
 
 other_response_endpoints = [
@@ -61,19 +55,16 @@ other_response_endpoints = [
 
 @pytest.mark.parametrize('method', methods)
 @pytest.mark.parametrize('endpoint', other_response_endpoints)
-async def test_non_json_responses(client: AsyncClient, caplog, method: str, endpoint: str) -> None:
-    caplog.set_level('DEBUG')
+async def test_non_json_responses(client: AsyncClient, method: str, endpoint: str) -> None:
     idempotency_header = {'Idempotency-Key': uuid4().hex}
 
     # First request
     response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
-    assert caplog.messages[0] == 'Cannot handle non-JSON response. Returning early.'
 
     # Second request
     response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
-    assert caplog.messages[0] == 'Cannot handle non-JSON response. Returning early.'
 
 
 non_json_encoding_endpoints = [
@@ -85,33 +76,29 @@ non_json_encoding_endpoints = [
 @pytest.mark.parametrize('method', methods)
 @pytest.mark.parametrize('endpoint', non_json_encoding_endpoints)
 async def test_wrong_response_encoding(client: AsyncClient, caplog, method: str, endpoint: str) -> None:
-    caplog.set_level('DEBUG')
     idempotency_header = {'Idempotency-Key': uuid4().hex}
 
     # First request
     response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
-    assert caplog.messages[0] == 'Failed to decode payload as JSON. Returning early.'
 
     # Second request
     response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
-    assert caplog.messages[0] == 'Failed to decode payload as JSON. Returning early.'
 
 
 already_idempotent_methods = ['get', 'put', 'delete', 'options', 'head']
 
 
 @pytest.mark.parametrize('method', already_idempotent_methods)
-async def test_idempotent_method(client: AsyncClient, caplog, method: str) -> None:
-    caplog.set_level('DEBUG')
+async def test_idempotent_method(client: AsyncClient, method: str) -> None:
     idempotency_header = {'Idempotency-Key': uuid4().hex}
     await client.__getattribute__(method)('/idempotent-method', headers=idempotency_header)
-    assert caplog.messages[0] == 'Returning response directly since request method is already idempotent'
+    second_response = await client.__getattribute__(method)('/idempotent-method', headers=idempotency_header)
+    assert second_response.headers == {}
 
 
 async def test_multiple_concurrent_requests(client: AsyncClient, caplog) -> None:
-    caplog.set_level('DEBUG')
     id_ = str(uuid4())
 
     async def fire_request():
@@ -123,7 +110,6 @@ async def test_multiple_concurrent_requests(client: AsyncClient, caplog) -> None
 
     assert response1.status_code == 200
     assert response2.status_code == 409
-    assert caplog.messages[0] == f"Returning 409 since a request is already in progress for idempotency key '{id_}'"
 
 
 async def test_bad_header_formatting(client: AsyncClient) -> None:
