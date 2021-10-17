@@ -4,7 +4,7 @@ from typing import Optional
 from starlette.responses import Response
 
 
-class Handler(ABC):
+class Backend(ABC):
     @abstractmethod
     async def get_stored_response(self, idempotency_key: str) -> Optional[Response]:
         """
@@ -22,7 +22,7 @@ class Handler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def store_idempotency_key(self, idempotency_key: str) -> None:
+    async def store_idempotency_key(self, idempotency_key: str) -> bool:
         """
         Store an idempotency key header value in a set.
 
@@ -41,12 +41,5 @@ class Handler(ABC):
 
         Once a request has been completed, we should pop the idempotency
         key stored when calling the 'store_idempotency_key' method.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def is_key_pending(self, idempotency_key: str) -> bool:
-        """
-        Check whether a key exists in our set or not.
         """
         raise NotImplementedError()

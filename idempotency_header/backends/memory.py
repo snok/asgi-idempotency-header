@@ -1,21 +1,20 @@
 import time
 from typing import Any, Dict, Optional, Set
 
-from fastapi.responses import JSONResponse
+from starlette.responses import JSONResponse
 
-from idempotency_header.handlers.base import Handler
+from idempotency_header.backends.base import Backend
 
 
-class MemoryHandler(Handler):
+class MemoryBackend(Backend):
     """
-    In-memory handler class.
+    In-memory backend.
 
-    Warning: the in-memory handler has one major drawback; memory is not shared state.
-    If you're running your web application on multiple pods/workers/threads,
-    the stored responses will not be shared between them, so the middleware
-    will not work as intended.
+    This backend should probably not be used in deployed environments where
+    applications are hosted on several nodes, since memory is not shared state
+    and the response caching then won't work as intended.
 
-    This handler will mainly be suitable for local development or test purposes.
+    The backend is mainly here for local development or testing.
     """
 
     response_store: Dict[str, Dict[str, Any]] = {}
@@ -49,20 +48,18 @@ class MemoryHandler(Handler):
             'status_code': status_code,
         }
 
-    async def store_idempotency_key(self, idempotency_key: str) -> None:
+    async def store_idempotency_key(self, idempotency_key: str) -> bool:
         """
         Store an idempotency key header value in a set.
         """
+        if idempotency_key in self.keys:
+            return True
+
         self.keys.add(idempotency_key)
+        return False
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
         Remove an idempotency header value from the set.
         """
         self.keys.remove(idempotency_key)
-
-    async def is_key_pending(self, idempotency_key: str) -> bool:
-        """
-        Check whether a key exists in our set or not.
-        """
-        return idempotency_key in self.keys

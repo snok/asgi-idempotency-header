@@ -2,24 +2,27 @@ import json
 from typing import Optional
 
 from aioredis.client import Redis
+from aioredis.exceptions import LockError
 from fastapi.responses import JSONResponse
 
-from idempotency_header.handlers.base import Handler
+from idempotency_header.backends.base import Backend
 
 
-class RedisHandler(Handler):
+class AioredisBackend(Backend):
     """
-    Redis handler class.
+    Redis backend class.
     """
 
-    def __init__(self, redis: Redis):
+    def __init__(
+        self, redis: Redis, keys_key: str = 'idempotency-key-keys', response_key: str = 'idempotency-key-responses'
+    ):
         self.redis = redis
-        self.KEYS_KEY = 'idempotency-key-keys'
-        self.RESPONSE_STORE = 'idempotency-key-responses'
+        self.KEYS_KEY = keys_key
+        self.RESPONSE_KEY = response_key
 
     def get_keys(self, idempotency_key: str) -> tuple[str, str]:
-        payload_key = self.RESPONSE_STORE + idempotency_key
-        status_code_key = self.RESPONSE_STORE + idempotency_key + 'status-code'
+        payload_key = self.RESPONSE_KEY + idempotency_key
+        status_code_key = self.RESPONSE_KEY + idempotency_key + 'status-code'
         return payload_key, status_code_key
 
     async def get_stored_response(self, idempotency_key: str) -> Optional[JSONResponse]:
@@ -50,21 +53,25 @@ class RedisHandler(Handler):
             await self.redis.expire(payload_key, expiry)
             await self.redis.expire(status_code_key, expiry)
 
-    async def store_idempotency_key(self, idempotency_key: str) -> None:
+    async def store_idempotency_key(self, idempotency_key: str) -> bool:
         """
         Store an idempotency key header value in a set.
         """
-        await self.redis.sadd(self.KEYS_KEY, idempotency_key)
+        try:
+            # Acquire lock
+            async with self.redis.lock(self.KEYS_KEY + '-lock', timeout=1) as lock:
+                # When lock is acquired, make sure we still need to update the token (this might have been done already)
+                keys = await self.redis.smembers(self.KEYS_KEY)
+                if idempotency_key in keys:
+                    return True
+
+                await lock.redis.sadd(self.KEYS_KEY, idempotency_key)
+                return False
+        except LockError:
+            return await self.store_idempotency_key(idempotency_key)
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
         Remove an idempotency header value from the set.
         """
         await self.redis.srem(self.KEYS_KEY, idempotency_key)
-
-    async def is_key_pending(self, idempotency_key: str) -> bool:
-        """
-        Check whether a key exists in our set or not.
-        """
-        keys = await self.redis.smembers(self.KEYS_KEY)
-        return idempotency_key in keys
