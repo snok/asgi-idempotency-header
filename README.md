@@ -1,4 +1,6 @@
 [![tests](https://github.com/sondrelg/asgi-idempotency-header/actions/workflows/test.yml/badge.svg)](https://github.com/sondrelg/asgi-idempotency-header/actions/workflows/test.yml)
+[![pypi](https://img.shields.io/pypi/v/asgi-idempotency-header.svg)](https://pypi.org/project/drf-openapi-tester/)
+[![python-versions](https://img.shields.io/badge/python-3.8%2B-blue)](https://pypi.org/project/asgi-idempotency-header)
 [![codecov](https://codecov.io/gh/sondrelg/asgi-idempotency-header/branch/main/graph/badge.svg?token=UOJTCSY8H7)](https://codecov.io/gh/sondrelg/asgi-idempotency-header)
 
 # Idempotency Header ASGI Middleware
