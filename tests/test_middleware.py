@@ -112,7 +112,11 @@ async def test_multiple_concurrent_requests(client: AsyncClient, caplog) -> None
     assert response2.status_code == 409
 
 
-async def test_bad_header_formatting(client: AsyncClient) -> None:
-    response = await client.post('/json-response', headers={'Idempotency-key': 'test'})
+bad_header_values = ['test', uuid4().hex[:-1] + 'u', '123', 'ssssssssssssssssssss']
+
+
+@pytest.mark.parametrize('value', bad_header_values)
+async def test_bad_header_formatting(client: AsyncClient, value: str) -> None:
+    response = await client.post('/json-response', headers={'Idempotency-key': value})
     assert response.json() == {'detail': "'Idempotency-Key' header value must be formatted as a v4 UUID"}
     assert response.status_code == 422
