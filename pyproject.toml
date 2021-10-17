@@ -30,6 +30,9 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Typing :: Typed",
 ]
+packages = [
+    { include = "idempotency_header_middleware" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
