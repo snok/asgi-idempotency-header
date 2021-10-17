@@ -20,7 +20,7 @@ class AioredisBackend(Backend):
         self.KEYS_KEY = keys_key
         self.RESPONSE_KEY = response_key
 
-    def get_keys(self, idempotency_key: str) -> Tuple[str, str]:
+    def _get_keys(self, idempotency_key: str) -> Tuple[str, str]:
         payload_key = self.RESPONSE_KEY + idempotency_key
         status_code_key = self.RESPONSE_KEY + idempotency_key + 'status-code'
         return payload_key, status_code_key
@@ -29,7 +29,7 @@ class AioredisBackend(Backend):
         """
         Return a stored response if it exists, otherwise return None.
         """
-        payload_key, status_code_key = self.get_keys(idempotency_key)
+        payload_key, status_code_key = self._get_keys(idempotency_key)
 
         if not (payload := await self.redis.get(payload_key)):
             return None
@@ -44,7 +44,7 @@ class AioredisBackend(Backend):
         """
         Store a response in redis.
         """
-        payload_key, status_code_key = self.get_keys(idempotency_key)
+        payload_key, status_code_key = self._get_keys(idempotency_key)
 
         await self.redis.set(payload_key, json.dumps(payload))
         await self.redis.set(status_code_key, status_code)
