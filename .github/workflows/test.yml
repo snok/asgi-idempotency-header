@@ -33,7 +33,7 @@ jobs:
         id: get-python-versions-action
         with:
           min-version: 3.8
-          include-prereleases: true
+          include-prereleases: false  # toggle to true when 3.11 reaches beta
 
   test:
     needs: [ get-python-versions ]
