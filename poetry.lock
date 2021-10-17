@@ -2,8 +2,8 @@
 name = "aioredis"
 version = "2.0.0"
 description = "asyncio (PEP 3156) Redis support"
-category = "dev"
-optional = false
+category = "main"
+optional = true
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -34,8 +34,8 @@ trio = ["trio (>=0.16)"]
 name = "async-timeout"
 version = "3.0.1"
 description = "Timeout context manager for asyncio programs"
-category = "dev"
-optional = false
+category = "main"
+optional = true
 python-versions = ">=3.5.3"
 
 [[package]]
@@ -245,6 +245,14 @@ name = "iniconfig"
 version = "1.1.1"
 description = "iniconfig: brain-dead simple config-ini parsing"
 category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "lupa"
+version = "1.10"
+description = "Python wrapper around Lua and LuaJIT"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -518,10 +526,13 @@ six = ">=1.9.0,<2"
 docs = ["proselint (>=0.10.2)", "sphinx (>=3)", "sphinx-argparse (>=0.2.5)", "sphinx-rtd-theme (>=0.4.3)", "towncrier (>=19.9.0rc1)"]
 testing = ["coverage (>=4)", "coverage-enable-subprocess (>=1)", "flaky (>=3)", "pytest (>=4)", "pytest-env (>=0.6.2)", "pytest-freezegun (>=0.4.1)", "pytest-mock (>=2)", "pytest-randomly (>=1)", "pytest-timeout (>=1)", "packaging (>=20.0)"]
 
+[extras]
+aioredis = ["aioredis"]
+
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "ce450afad0b79ddba8c12ce31190974147108b1aa6228b3f18f645e8b0913824"
+content-hash = "9ef09d360da295522102d943528514c37b74761031dc7785d100c3aebb86f70d"
 
 [metadata.files]
 aioredis = [
@@ -638,6 +649,33 @@ idna = [
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
+]
+lupa = [
+    {file = "lupa-1.10-cp27-cp27m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:254fe6ffd574d7b2459e39b1196ed4c2d108e77779bc948b75c9a25051cd9e02"},
+    {file = "lupa-1.10-cp27-cp27m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:490fb29b6b631f0e284d6c51a34470f950c552148865d394368c4f93b3b6f4b6"},
+    {file = "lupa-1.10-cp27-cp27m-win32.whl", hash = "sha256:6d81b8c90d62a26b23f124f12908d879746c00879f67f31192a92a9d37654db1"},
+    {file = "lupa-1.10-cp27-cp27m-win_amd64.whl", hash = "sha256:5ffee1248814d736e943390bd6db45d8e2bb3e9e1cffa645508a365a88de6145"},
+    {file = "lupa-1.10-cp27-cp27mu-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:7b5f3cc365df9ca85eac2ca3c226867a586b5b14a5e5c61bfb1895a6eefc7a59"},
+    {file = "lupa-1.10-cp27-cp27mu-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:f388df201c12c4b3bf118ca044bffc86fd97aaa104995acbfe5bf8ab1f5324c3"},
+    {file = "lupa-1.10-cp35-cp35m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:037e1213da6e8775518b5d16b9f8e120334e3d87908097bb0ebdf3fbc5a53c42"},
+    {file = "lupa-1.10-cp35-cp35m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:390815338c4f61ea6bc199a9afffe143ef271aa8ac320471ca6664d2d4794293"},
+    {file = "lupa-1.10-cp35-cp35m-win32.whl", hash = "sha256:3768c7ad63e88755030900e42f180b463c8dccc1e226cad87e9ff021211c6e0d"},
+    {file = "lupa-1.10-cp35-cp35m-win_amd64.whl", hash = "sha256:8140882bf4cba06822531807ed9531228c9f1308e842f202e1dd8fa14f229afd"},
+    {file = "lupa-1.10-cp36-cp36m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:34c0c4f920a2d6df8d39b460ff39363378e08052c56fca66bfbd7c43f28f4557"},
+    {file = "lupa-1.10-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:21a97db5be9654d7359e185345e11a12e861b1c58945c8bf75e36d1b58b9e679"},
+    {file = "lupa-1.10-cp36-cp36m-win32.whl", hash = "sha256:32d05befe63db1dc99944fa03d84dca06bb8c8d0e44499aee1c6a541a017c273"},
+    {file = "lupa-1.10-cp36-cp36m-win_amd64.whl", hash = "sha256:fb157e36b6ee5c65b0bbcd758d6c36f14660fb3a9d23fc7a66916e69bb45764f"},
+    {file = "lupa-1.10-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:4b08fd62c58e73f7975bdcffd3227edca978a1e8e992cccb29c17d529741e8b1"},
+    {file = "lupa-1.10-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:0d9998bc7d9c2ecda35e8cad55d794c26f913ee703d6bd468276281b63dae99c"},
+    {file = "lupa-1.10-cp37-cp37m-win32.whl", hash = "sha256:532ec13af930c506756886c2edb4edbde6ad29399f411c4599661747792d78f3"},
+    {file = "lupa-1.10-cp37-cp37m-win_amd64.whl", hash = "sha256:19d42c494d04257ba15bb3c2c347ea6b6316acc3aed6fe4f147cf2de068c8245"},
+    {file = "lupa-1.10-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:79de55c8d8a64def8b8904836a8c148c658d232bf998cf1d7c9aa9f576036d02"},
+    {file = "lupa-1.10-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:cdb749d95551e580615418083852fc5e1edf4f47dafc9fa1ab758d59aac1c4fd"},
+    {file = "lupa-1.10-cp38-cp38-win32.whl", hash = "sha256:5ac77b3773ee585c5453126d89f86b17c802df636f7601e9c02639686821add9"},
+    {file = "lupa-1.10-cp38-cp38-win_amd64.whl", hash = "sha256:f27fcc8c95b00d229b06e77ef5b666cdfb0ca767f38ed742e87bc14c065e2fa6"},
+    {file = "lupa-1.10-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:7f42e7c23385445ca7b3fc2e9f77455757f219a9f630882c95430249de77a003"},
+    {file = "lupa-1.10-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:831ad0aa71491bfcbdc7a59ee2426ee6e2ab6754aaba836f21d34230f50690f4"},
+    {file = "lupa-1.10.tar.gz", hash = "sha256:e2511b27f381f6fdb66ef40dcc518215038197431b241935678dfc3d51178231"},
 ]
 nodeenv = [
     {file = "nodeenv-1.6.0-py2.py3-none-any.whl", hash = "sha256:621e6b7076565ddcacd2db0294c0381e01fd28945ab36bcf00f41c5daf63bef7"},
