@@ -17,11 +17,12 @@ keywords = [
     "http"
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
     "Intended Audience :: Developers",
-    "Environment :: Console",
-    "Operating System :: OS Independent",
     "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",  # close enough
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",

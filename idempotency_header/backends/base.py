@@ -24,9 +24,11 @@ class Backend(ABC):
     @abstractmethod
     async def store_idempotency_key(self, idempotency_key: str) -> bool:
         """
-        Store an idempotency key header value in a set.
+        Store an idempotency key header value in a set, if it doesn't already exist.
 
-        The purpose of this is to make sure we reject repeated requests
+        Return a bool to indicate whether we wrote to the backend or not.
+
+        The primary purpose of this method is to make sure we reject repeated requests
         (with a 409) when a request has been initiated but is not yet completed.
 
         All implementations of this most likely will want to implement some locking
@@ -37,9 +39,9 @@ class Backend(ABC):
     @abstractmethod
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
-        Remove an idempotency header value from a set.
+        Remove an idempotency header value from the backend.
 
         Once a request has been completed, we should pop the idempotency
-        key stored when calling the 'store_idempotency_key' method.
+        key stored in 'store_idempotency_key'.
         """
         raise NotImplementedError()

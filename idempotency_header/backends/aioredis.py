@@ -10,7 +10,7 @@ from idempotency_header.backends.base import Backend
 
 class AioredisBackend(Backend):
     """
-    Redis backend class.
+    Redis backend.
     """
 
     def __init__(

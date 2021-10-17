@@ -17,7 +17,7 @@ logger = logging.getLogger('asgi_idempotency_header')
 
 def is_valid_uuid(uuid_: str) -> bool:
     """
-    Validate string as uuid4.
+    Check whether a string is a uuid.
     """
     try:
         return bool(uuid.UUID(uuid_, version=4).hex)
