@@ -3,14 +3,12 @@
 
 # Idempotency Header ASGI Middleware
 
-This is a middleware for providing automatic idempotency in `POST` and `PATCH` endpoints.
-Can be used with [Starlette](https://github.com/encode/starlette) and [FastAPI](https://github.com/tiangolo/fastapi).
+Middleware for providing idempotency in `POST` and `PATCH` endpoints.
+Compatible with both [Starlette](https://github.com/encode/starlette) and [FastAPI](https://github.com/tiangolo/fastapi).
 
-When an idempotency-key header is present in a `POST` or `PATCH` request, the response is cached.
-When subsequent requests hit the middleware, the saved response is returned directly.
-The benefit of this is, you can make sure actions are only performed once.
-
-An idempotency header might look like this: `{"Idempotency-key": "a467b831-7ab2-47ef-972c-962ecef6faa7"}`.
+The middleware prevents repeated creation of resources, by
+caching responses and replaying them back to the user,
+when an idempotency-key HTTP header is detected.
 
 The middleware's implementation is largely modelled after [stripe](stripe.com)'s implementation. See [this](https://stripe.com/blog/idempotency) blog post for details.
 
@@ -56,6 +54,8 @@ app = FastAPI(
     ]
 )
 ```
+
+
 
 ## Configuration
 
@@ -116,3 +116,44 @@ JSONResponse({'detail': f"'{self.idempotency_header_key}' header value must be f
 
 Responses probably shouldn't be cached forever. Expiry defines how long to cache responses for, in seconds. Set
 to 24 hours by default.
+
+## Nice to knows
+
+Middleware behavior briefly summarized:
+
+- The first request is processed; consequent requests are replayed, until the response expires.
+- If another request comes in while the first request is being processed, the middleware will
+return a 409 telling the user that a request is already being processed.
+- If for some reason you want to avoid the replay behavior on subsequent requests, just generate a new idempotency key.
+- The middleware only handles HTTP requests.
+- The middleware only handles requests with `POST` and `PATCH` methods. Other HTTP methods are idempotent by default.
+
+## Example
+
+Once implemented, the first request sent will go through to the endpoint as normal,
+while the second will immediately be replayed back to the user:
+
+```python
+import asyncio
+
+from httpx import AsyncClient
+
+
+async def main():
+    async with AsyncClient() as client:
+        first_response = await client.post(
+            endpoint,
+            headers={'Idempotency-Key': '9525c412-e5b9-43b4-a62a-54b751fac989'}
+        )
+        print(first_response.headers)  # --> {'content-type': 'application/json'}
+
+        second_response = await client.post(
+            endpoint,
+            headers={'Idempotency-Key': '9525c412-e5b9-43b4-a62a-54b751fac989'}
+        )
+        print(second_response.headers)  # --> {'content-type': 'application/json', 'idempotency-replayed': true}
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
