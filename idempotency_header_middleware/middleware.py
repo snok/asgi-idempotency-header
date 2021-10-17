@@ -1,9 +1,9 @@
 import json
-import uuid
 from collections import namedtuple
 from dataclasses import dataclass
 from json import JSONDecodeError
 from typing import Any, Optional, Union
+from uuid import UUID
 
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
@@ -17,7 +17,7 @@ def is_valid_uuid(uuid_: str) -> bool:
     Check whether a string is a uuid.
     """
     try:
-        return bool(uuid.UUID(uuid_, version=4).hex)
+        return bool(UUID(uuid_, version=4))
     except ValueError:
         return False
 
