@@ -71,7 +71,7 @@ line_length = 120
 
 [tool.coverage.run]
 omit = [
-    'idempotency_header/backends/base.py'
+    'idempotency_header_middleware/backends/base.py'
 ]
 
 [tool.coverage.report]
