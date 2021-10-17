@@ -26,7 +26,7 @@ class Backend(ABC):
         """
         Store an idempotency key header value in a set, if it doesn't already exist.
 
-        Return a bool to indicate whether we wrote to the backend or not.
+        Returns False if we wrote to the backend, True if the key already existed.
 
         The primary purpose of this method is to make sure we reject repeated requests
         (with a 409) when a request has been initiated but is not yet completed.

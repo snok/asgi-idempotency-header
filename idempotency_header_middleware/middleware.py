@@ -69,7 +69,8 @@ class IdempotencyHeaderMiddleware:
             response = JSONResponse(payload, 409)
             return await response(scope, receive, send)
 
-        response_state = namedtuple('response_state', ['status_code', 'response_headers', 'expiry'])
+        # Spin up a request-specific class instance, so we can read and write to it in the `send_wrapper` below
+        response_state = namedtuple('response_state', ['status_code', 'response_headers'])
 
         async def send_wrapper(message: Message) -> None:
             if message['type'] == 'http.response.start':
