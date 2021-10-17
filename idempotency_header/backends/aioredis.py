@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Optional, Tuple
 
 from aioredis.client import Redis
 from aioredis.exceptions import LockError
@@ -20,7 +20,7 @@ class AioredisBackend(Backend):
         self.KEYS_KEY = keys_key
         self.RESPONSE_KEY = response_key
 
-    def get_keys(self, idempotency_key: str) -> tuple[str, str]:
+    def get_keys(self, idempotency_key: str) -> Tuple[str, str]:
         payload_key = self.RESPONSE_KEY + idempotency_key
         status_code_key = self.RESPONSE_KEY + idempotency_key + 'status-code'
         return payload_key, status_code_key
