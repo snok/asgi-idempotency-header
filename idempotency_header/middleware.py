@@ -2,8 +2,9 @@ import json
 import logging
 import uuid
 from collections import namedtuple
+from dataclasses import dataclass
 from json import JSONDecodeError
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, Union
 
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
@@ -11,7 +12,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from idempotency_header.backends.base import Backend
 
-logger = logging.getLogger('idempotency_header_middleware')
+logger = logging.getLogger('asgi_idempotency_header')
 
 
 def is_valid_uuid(uuid_: str) -> bool:
@@ -24,26 +25,14 @@ def is_valid_uuid(uuid_: str) -> bool:
         return False
 
 
-T = TypeVar('T', bound=Backend)
-
-
+@dataclass
 class IdempotencyHeaderMiddleware:
-    def __init__(
-        self,
-        app: ASGIApp,
-        backend: T,
-        idempotency_header_key: str = 'Idempotency-Key',
-        replay_header_key: str = 'Idempotent-Replayed',
-        enforce_uuid4_formatting: bool = False,
-        expiry: Optional[int] = 60 * 60 * 24,
-    ) -> None:
-        self.app = app
-        self.backend = backend
-        self.idempotency_header_key = idempotency_header_key
-        self.replay_header_key = replay_header_key
-        self.enforce_uuid4_formatting = enforce_uuid4_formatting
-        self.expiry = expiry
-        self.status_codes: dict[str, int] = {}
+    app: ASGIApp
+    backend: Backend
+    idempotency_header_key: str = 'Idempotency-Key'
+    replay_header_key: str = 'Idempotent-Replayed'
+    enforce_uuid4_formatting: bool = False
+    expiry: Optional[int] = 60 * 60 * 24
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Union[JSONResponse, Any]:
         """
@@ -81,7 +70,6 @@ class IdempotencyHeaderMiddleware:
             return await response(scope, receive, send)
 
         response_state = namedtuple('response_state', ['status_code', 'response_headers', 'expiry'])
-        response_state.expiry = self.expiry
 
         async def send_wrapper(message: Message) -> None:
             if message['type'] == 'http.response.start':
@@ -111,7 +99,7 @@ class IdempotencyHeaderMiddleware:
                     idempotency_key=idempotency_key,
                     payload=json_payload,
                     status_code=response_state.status_code,
-                    expiry=response_state.expiry,
+                    expiry=self.expiry,
                 )
                 await self.backend.clear_idempotency_key(idempotency_key)
 

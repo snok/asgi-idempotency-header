@@ -7,7 +7,6 @@ import pytest
 from idempotency_header.backends.aioredis import AioredisBackend
 from idempotency_header.backends.base import Backend
 from idempotency_header.backends.memory import MemoryBackend
-from idempotency_header.middleware import T
 from tests.conftest import dummy_response
 
 pytestmark = pytest.mark.asyncio
@@ -16,7 +15,6 @@ base_methods = [
     'get_stored_response',
     'store_response_data',
     'store_idempotency_key',
-    'clear_idempotency_key',
     'clear_idempotency_key',
 ]
 
@@ -31,7 +29,7 @@ redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
 
 
 @pytest.mark.parametrize('backend', [AioredisBackend(redis), MemoryBackend()])
-async def test_backend(backend: T):
+async def test_backend(backend: Backend):
     assert issubclass(backend.__class__, Backend)
 
     # Test setting and clearing key
