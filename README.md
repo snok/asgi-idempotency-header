@@ -79,7 +79,7 @@ IdempotencyHeaderMiddleware(
 )
 ```
 
-**Backend**
+### Backend
 
 The backend is the only required argument. The backend defines where to store a response.
 
@@ -89,17 +89,17 @@ and a memory-backend for testing.
 Contributions for more backends are welcomed, and configuring a custom backend is pretty simple - just
 take a look at the existing ones.
 
-**Idempotency header key**
+### Idempotency header key
 
 The idempotency header key is the header value to check for.
 The default value is `"Idempotency-Key"`, but it could be set to any string.
 
-**Replay header key**
+### Replay header key
 
 The replay header key is added to replayed responses. It provides a way for the client
 to tell whether the action was performed for the first time or not.
 
-**Enforce UUID formatting**
+### Enforce UUID formatting
 
 Clients could set any header value they want, but the shorter the key value, the higher the risk is for collisions.
 If two clients send in the same header value for what's meant to be two separate requests, the
@@ -112,7 +112,7 @@ When validation fails, a 422 response is returned from the middleware:
 JSONResponse({'detail': f"'{self.idempotency_header_key}' header value must be formatted as a v4 UUID"}, 422)
 ```
 
-**Expiry**
+### Expiry
 
 Responses probably shouldn't be cached forever. Expiry defines how long to cache responses for, in seconds. Set
 to 24 hours by default.
