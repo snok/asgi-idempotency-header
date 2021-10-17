@@ -5,14 +5,17 @@
 
 # Idempotency Header ASGI Middleware
 
-Middleware for providing idempotency in `POST` and `PATCH` endpoints. Compatible with
-both [Starlette](https://github.com/encode/starlette) and [FastAPI](https://github.com/tiangolo/fastapi).
+A middleware for making `POST` and `PATCH` endpoints idempotent.
 
-The middleware prevents repeated creation of resources, by caching responses and replaying them back to the user, when
-an idempotency-key HTTP header is detected.
+The purpose of the middleware is to guarantee that execution of mutating endpoints happens exactly once,
+regardless of the number of requests.
+We achieve this by caching responses, and returning already-saved responses to the user on repeated requests.
+Responses are only cached when an idempotency-key HTTP header is present, so clients must opt-into this behaviour.
 
-The middleware's implementation is largely modelled after [stripe](stripe.com)'s implementation.
-See [this](https://stripe.com/blog/idempotency) blog post for details.
+This is largely modelled after [stripe' implementation](https://stripe.com/docs/api/idempotent_requests).
+
+The middleware is compatible with both [Starlette](https://github.com/encode/starlette)
+and [FastAPI](https://github.com/tiangolo/fastapi) apps.
 
 ## Installation
 
@@ -22,9 +25,7 @@ pip install asgi-idempotency-header
 
 ## Setup
 
-The middleware can be added in one of (at least) two ways:
-
-**Add to app**
+Add the middleware to your app like this:
 
 ```python
 from fastapi import FastAPI
@@ -32,13 +33,14 @@ from fastapi import FastAPI
 from idempotency_header_middleware import IdempotencyHeaderMiddleware
 from idempotency_header_middleware.backends import AioredisBackend
 
+
+backend = AioredisBackend(redis=redis)
+
 app = FastAPI()
-app.add_middleware(IdempotencyHeaderMiddleware(backend=AioredisBackend(redis=redis)))
+app.add_middleware(IdempotencyHeaderMiddleware(backend=backend))
 ```
 
-or
-
-**Pass on app instantiation**
+or like this:
 
 ```python
 from fastapi import FastAPI
@@ -47,26 +49,31 @@ from fastapi.middleware import Middleware
 from idempotency_header_middleware import IdempotencyHeaderMiddleware
 from idempotency_header_middleware.backends import AioredisBackend
 
+
+backend = AioredisBackend(redis=redis)
+
 app = FastAPI(
     middleware=[
         Middleware(
             IdempotencyHeaderMiddleware,
-            enforce_uuid4_formatting=True,
-            backend=AioredisBackend(redis=redis),
+            backend=backend,
         )
     ]
 )
 ```
 
+If you're using `Starlette`, just substitute `FastAPI` for `Starlette` and it should work the same.
+
 ## Configuration
 
-The middleware takes a few arguments:
+The middleware takes a few arguments. A full example looks like this:
 
 ```python
 from aioredis import from_url
 
 from idempotency_header_middleware import IdempotencyHeaderMiddleware
 from idempotency_header_middleware.backends import AioredisBackend
+
 
 redis = from_url(redis_url)
 backend = AioredisBackend(redis=redis)
@@ -79,6 +86,8 @@ IdempotencyHeaderMiddleware(
     expiry=60 * 60 * 24,
 )
 ```
+
+The following section describes each argument:
 
 ### Backend
 
@@ -140,42 +149,15 @@ expiry: int = 60 * 60 * 24
 
 How long to cache responses for, measured in seconds. Set to 24 hours by default.
 
-## Nice to knows
+## Quick summary of behaviours
 
-Middleware behavior briefly summarized:
+Briefly summarized, this is how the middleware functions:
 
-- The first request is processed; consequent requests are replayed, until the response expires.
-- If a second request hits the middleware, before the first request has **finished** processing,
-  the middleware will return a 409, telling the user that a request is already being processed.
+- The first request is processed, and consequent requests are replayed, until the response expires.
+  `expiry` *can* be set to `None` to skip expiry, but most likely you will want to expire responses
+  after a while.
+- If two requests comes in at the same time - i.e., if a second request hits the middlware *before*
+  the first request has finished, the middleware will return a 409, informing the user that a request
+  is being processed, and that we cannot handle the second request.
 - The middleware only handles HTTP requests.
 - The middleware only handles requests with `POST` and `PATCH` methods. Other HTTP methods are idempotent by default.
-
-## Example
-
-Once implemented, the first request sent will go through to the endpoint as normal, while the second will immediately be
-replayed back to the user:
-
-```python
-import asyncio
-
-from httpx import AsyncClient
-
-
-async def main():
-    async with AsyncClient() as client:
-        first_response = await client.post(
-            endpoint,
-            headers={'Idempotency-Key': '9525c412-e5b9-43b4-a62a-54b751fac989'}
-        )
-        print(first_response.headers)  # --> {'content-type': 'application/json'}
-
-        second_response = await client.post(
-            endpoint,
-            headers={'Idempotency-Key': '9525c412-e5b9-43b4-a62a-54b751fac989'}
-        )
-        print(second_response.headers)  # --> {'content-type': '...', 'idempotent-replayed': true}
-
-
-if __name__ == '__main__':
-    asyncio.run(main())
-```
