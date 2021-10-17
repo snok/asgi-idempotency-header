@@ -58,16 +58,16 @@ class AioredisBackend(Backend):
         Store an idempotency key header value in a set.
         """
         try:
-            # Acquire lock
+            # acquire lock
             async with self.redis.lock(self.KEYS_KEY + '-lock', timeout=1) as lock:
-                # When lock is acquired, make sure we still need to update the token (this might have been done already)
+                # when lock is acquired, check if the key already exists
                 keys = await self.redis.smembers(self.KEYS_KEY)
                 if idempotency_key in keys:
                     return True
-
-                await lock.redis.sadd(self.KEYS_KEY, idempotency_key)
-                return False
-        except LockError:
+                else:
+                    await lock.redis.sadd(self.KEYS_KEY, idempotency_key)
+                    return False
+        except LockError:  # pragma: no cover
             return await self.store_idempotency_key(idempotency_key)
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:

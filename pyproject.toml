@@ -69,8 +69,9 @@ profile = "black"
 line_length = 120
 
 [tool.coverage.run]
-omit = []
-branch = true
+omit = [
+    'idempotency_header/backends/base.py'
+]
 
 [tool.coverage.report]
 show_missing = true

@@ -43,6 +43,7 @@ async def test_backend(backend: Backend):
     assert already_existed is False
 
     # Test storing and fetching response data
+    assert (await backend.get_stored_response(id_)) is None
     await backend.store_response_data(id_, dummy_response, 201)
     stored_response = await backend.get_stored_response(id_)
     assert stored_response.status_code == 201
