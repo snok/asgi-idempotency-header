@@ -22,7 +22,7 @@ from starlette.responses import (
 from idempotency_header_middleware.backends.aioredis import AioredisBackend
 from idempotency_header_middleware.middleware import IdempotencyHeaderMiddleware
 
-logger = logging.getLogger('sanity_html')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
