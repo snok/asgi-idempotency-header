@@ -1,4 +1,5 @@
 import time
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
 from starlette.responses import JSONResponse
@@ -6,6 +7,7 @@ from starlette.responses import JSONResponse
 from idempotency_header_middleware.backends.base import Backend
 
 
+@dataclass()
 class MemoryBackend(Backend):
     """
     In-memory backend.
@@ -17,8 +19,10 @@ class MemoryBackend(Backend):
     The backend is mainly here for local development or testing.
     """
 
-    response_store: Dict[str, Dict[str, Any]] = {}
-    keys: Set[str] = set()
+    expiry: Optional[int] = 60 * 60 * 24
+
+    response_store: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    keys: Set[str] = field(default_factory=set)
 
     async def get_stored_response(self, idempotency_key: str) -> Optional[JSONResponse]:
         """
@@ -36,14 +40,12 @@ class MemoryBackend(Backend):
             status_code=self.response_store[idempotency_key]['status_code'],
         )
 
-    async def store_response_data(
-        self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
-    ) -> None:
+    async def store_response_data(self, idempotency_key: str, payload: dict, status_code: int) -> None:
         """
         Store a response in memory.
         """
         self.response_store[idempotency_key] = {
-            'expiry': time.time() + expiry if expiry else None,
+            'expiry': time.time() + self.expiry if self.expiry else None,
             'json': payload,
             'status_code': status_code,
         }

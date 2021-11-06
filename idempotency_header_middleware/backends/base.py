@@ -5,6 +5,8 @@ from starlette.responses import Response
 
 
 class Backend(ABC):
+    expiry: Optional[int] = 60 * 60 * 24
+
     @abstractmethod
     async def get_stored_response(self, idempotency_key: str) -> Optional[Response]:
         """
@@ -13,9 +15,7 @@ class Backend(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def store_response_data(
-        self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
-    ) -> None:
+    async def store_response_data(self, idempotency_key: str, payload: dict, status_code: int) -> None:
         """
         Store a response to an appropriate backend (redis, postgres, etc.).
         """

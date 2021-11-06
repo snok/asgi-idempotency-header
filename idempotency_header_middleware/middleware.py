@@ -2,7 +2,7 @@ import json
 from collections import namedtuple
 from dataclasses import dataclass
 from json import JSONDecodeError
-from typing import Any, Optional, Union
+from typing import Any, Union
 from uuid import UUID
 
 from starlette.datastructures import Headers
@@ -14,7 +14,7 @@ from idempotency_header_middleware.backends.base import Backend
 
 def is_valid_uuid(uuid_: str) -> bool:
     """
-    Check whether a string is a uuid.
+    Check whether a string is a valid v4 uuid.
     """
     try:
         return bool(UUID(uuid_, version=4))
@@ -29,7 +29,6 @@ class IdempotencyHeaderMiddleware:
     idempotency_header_key: str = 'Idempotency-Key'
     replay_header_key: str = 'Idempotent-Replayed'
     enforce_uuid4_formatting: bool = False
-    expiry: Optional[int] = 60 * 60 * 24
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Union[JSONResponse, Any]:
         """
@@ -88,7 +87,6 @@ class IdempotencyHeaderMiddleware:
                     idempotency_key=idempotency_key,
                     payload=json_payload,
                     status_code=response_state.status_code,
-                    expiry=self.expiry,
                 )
                 await self.backend.clear_idempotency_key(idempotency_key)
 

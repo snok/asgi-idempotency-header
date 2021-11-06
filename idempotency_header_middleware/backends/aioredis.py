@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from aioredis.client import Redis
@@ -8,10 +9,13 @@ from fastapi.responses import JSONResponse
 from idempotency_header_middleware.backends.base import Backend
 
 
+@dataclass()
 class AioredisBackend(Backend):
     """
     Redis backend.
     """
+
+    expiry: Optional[int] = 60 * 60 * 24
 
     def __init__(
         self, redis: Redis, keys_key: str = 'idempotency-key-keys', response_key: str = 'idempotency-key-responses'
@@ -38,9 +42,7 @@ class AioredisBackend(Backend):
 
         return JSONResponse(json.loads(payload), status_code=int(status_code))
 
-    async def store_response_data(
-        self, idempotency_key: str, payload: dict, status_code: int, expiry: Optional[int] = None
-    ) -> None:
+    async def store_response_data(self, idempotency_key: str, payload: dict, status_code: int) -> None:
         """
         Store a response in redis.
         """
@@ -49,9 +51,9 @@ class AioredisBackend(Backend):
         await self.redis.set(payload_key, json.dumps(payload))
         await self.redis.set(status_code_key, status_code)
 
-        if expiry:
-            await self.redis.expire(payload_key, expiry)
-            await self.redis.expire(status_code_key, expiry)
+        if self.expiry:
+            await self.redis.expire(payload_key, self.expiry)
+            await self.redis.expire(status_code_key, self.expiry)
 
     async def store_idempotency_key(self, idempotency_key: str) -> bool:
         """
@@ -64,9 +66,9 @@ class AioredisBackend(Backend):
                 keys = await self.redis.smembers(self.KEYS_KEY)
                 if idempotency_key in keys:
                     return True
-                else:
-                    await lock.redis.sadd(self.KEYS_KEY, idempotency_key)
-                    return False
+
+                await lock.redis.sadd(self.KEYS_KEY, idempotency_key)
+                return False
         except LockError:  # pragma: no cover
             return await self.store_idempotency_key(idempotency_key)
 
