@@ -62,7 +62,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install -U pip
-          poetry install --no-interaction --no-root
+          poetry install --no-interaction --no-root --extras all
         if: steps.cache-venv.outputs.cache-hit != 'true'
       - run: source .venv/bin/activate && pip install coverage[toml]
         if: matrix.python-version == '3.10'
