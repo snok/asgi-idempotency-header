@@ -1,75 +1,84 @@
 [tool.poetry]
-name = "asgi-idempotency-header"
-version = "0.1.1"
-description = "Enables idempotent operations in POST and PATCH endpoints."
-authors = ["Sondre Lillebø Gundersen <sondrelg@live.no>"]
-license = "BSD-3"
+name = 'asgi-idempotency-header'
+version = '0.1.1'
+description = 'Enable idempotent operations in POST and PATCH endpoints.'
+authors = ['Sondre Lillebø Gundersen <sondrelg@live.no>']
+license = 'BSD-3'
+readme = 'README.md'
+homepage = 'https://github.com/sondrelg/asgi-idempotency-header'
+repository = 'https://github.com/sondrelg/asgi-idempotency-header'
 keywords = [
-    "idempotence",
-    "idempotency",
-    "header",
-    "fastapi",
-    "starlette",
-    "asgi",
-    "middleware",
-    "api",
-    "endpoint",
-    "http"
+    'idempotence',
+    'idempotency',
+    'header',
+    'fastapi',
+    'starlette',
+    'asgi',
+    'middleware',
+    'api',
+    'endpoint',
+    'http'
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Framework :: AsyncIO",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
-    "Operating System :: OS Independent",
-    "Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",  # close enough
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Typing :: Typed",
+    'Development Status :: 4 - Beta',
+    'Environment :: Web Environment',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: BSD License',
+    'Framework :: AsyncIO',
+    'Operating System :: OS Independent',
+    'Topic :: Internet :: WWW/HTTP',
+    'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+    'Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Topic :: Software Development :: Libraries',
+    'Topic :: Software Development :: Libraries :: Application Frameworks',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Typing :: Typed',
 ]
 packages = [
-    { include = "idempotency_header_middleware" },
+    { include = 'idempotency_header_middleware' },
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-fastapi = { version = "*", optional = true }
-starlette = { version = "*", optional = true }
-aioredis = { version = "^2", optional = true }
-lupa = { version = "*", optional = true }  # needed for aioredis locks
+python = '^3.8'
+fastapi = { version = '*', optional = true }
+starlette = { version = '*', optional = true }
+aioredis = { version = '^2', optional = true }
+lupa = { version = '*', optional = true }  # needed for aioredis locks
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
-coverage = "^6.0.2"
-pre-commit = "^2.15.0"
-httpx = "^0.20.0"
-pytest-cov = "^3.0.0"
-pytest-asyncio = "^0.15.1"
-orjson = "^3.6.4"
-ujson = "^4.2.0"
-fakeredis = "^1.6.1"
+pytest = '*'
+coverage = '*'
+pre-commit = '*'
+httpx = '*'
+pytest-cov = '*'
+pytest-asyncio = '*'
+orjson = '*'
+ujson = '*'
+fakeredis = '*'
 
 [tool.poetry.extras]
-fastapi = ["fastapi"]
-starlette = ["starlette"]
-aioredis = ["aioredis", "lupa"]
-all = ["aioredis", "lupa", "fastapi", "starlette"]
+fastapi = ['fastapi']
+starlette = ['starlette']
+aioredis = ['aioredis', 'lupa']
+all = ['aioredis', 'lupa', 'fastapi', 'starlette']
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ['poetry-core>=1.0.0']
+build-backend = 'poetry.core.masonry.api'
 
 [tool.black]
+quiet = true
 line-length = 120
 skip-string-normalization = true
 experimental-string-processing = true
-quiet = true
 
 [tool.isort]
-profile = "black"
+profile = 'black'
 line_length = 120
 
 [tool.coverage.run]
