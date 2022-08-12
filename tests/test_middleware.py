@@ -1,19 +1,19 @@
 import asyncio
+from typing import Awaitable, Callable
 from uuid import uuid4
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 
 from tests.conftest import dummy_response
 
 pytestmark = pytest.mark.asyncio
 
-methods = ['post', 'patch']
+http_call = Callable[..., Awaitable[Response]]
 
 
-@pytest.mark.parametrize('method', methods)
-async def test_no_idempotence(client: AsyncClient, method: str) -> None:
-    response = await client.__getattribute__(method)('/json-response')
+async def test_no_idempotence(applicable_method: http_call) -> None:
+    response = await applicable_method('/json-response')
     assert response.json() == dummy_response
     assert dict(response.headers) == {'content-length': '15', 'content-type': 'application/json'}
 
@@ -28,18 +28,17 @@ json_response_endpoints = [
 ]
 
 
-@pytest.mark.parametrize('method', methods)
 @pytest.mark.parametrize('endpoint', json_response_endpoints)
-async def test_idempotence_works_for_json_responses(client: AsyncClient, method: str, endpoint: str) -> None:
+async def test_idempotence_works_for_json_responses(applicable_method: http_call, endpoint: str) -> None:
     idempotency_header = {'Idempotency-Key': uuid4().hex}
 
     # First request
-    response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
+    response = await applicable_method(endpoint, headers=idempotency_header)
     assert response.json() == dummy_response
     assert 'idempotent-replayed' not in dict(response.headers)
 
     # Second request
-    response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
+    response = await applicable_method(endpoint, headers=idempotency_header)
     assert response.json() == dummy_response
     assert dict(response.headers)['idempotent-replayed'] == 'true'
 
@@ -53,17 +52,16 @@ other_response_endpoints = [
 ]
 
 
-@pytest.mark.parametrize('method', methods)
 @pytest.mark.parametrize('endpoint', other_response_endpoints)
-async def test_non_json_responses(client: AsyncClient, method: str, endpoint: str) -> None:
+async def test_non_json_responses(applicable_method: http_call, endpoint: str) -> None:
     idempotency_header = {'Idempotency-Key': uuid4().hex}
 
     # First request
-    response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
+    response = await applicable_method(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
 
     # Second request
-    response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
+    response = await applicable_method(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
 
 
@@ -73,28 +71,23 @@ non_json_encoding_endpoints = [
 ]
 
 
-@pytest.mark.parametrize('method', methods)
 @pytest.mark.parametrize('endpoint', non_json_encoding_endpoints)
-async def test_wrong_response_encoding(client: AsyncClient, caplog, method: str, endpoint: str) -> None:
+async def test_wrong_response_encoding(caplog, applicable_method: http_call, endpoint: str) -> None:
     idempotency_header = {'Idempotency-Key': uuid4().hex}
 
     # First request
-    response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
+    response = await applicable_method(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
 
     # Second request
-    response = await client.__getattribute__(method)(endpoint, headers=idempotency_header)
+    response = await applicable_method(endpoint, headers=idempotency_header)
     assert 'idempotent-replayed' not in dict(response.headers)
 
 
-already_idempotent_methods = ['get', 'put', 'delete', 'options', 'head']
-
-
-@pytest.mark.parametrize('method', already_idempotent_methods)
-async def test_idempotent_method(client: AsyncClient, method: str) -> None:
+async def test_idempotent_method(inapplicable_method: http_call) -> None:
     idempotency_header = {'Idempotency-Key': uuid4().hex}
-    await client.__getattribute__(method)('/idempotent-method', headers=idempotency_header)
-    second_response = await client.__getattribute__(method)('/idempotent-method', headers=idempotency_header)
+    await inapplicable_method('/idempotent-method', headers=idempotency_header)
+    second_response = await inapplicable_method('/idempotent-method', headers=idempotency_header)
     assert second_response.headers == {}
 
 

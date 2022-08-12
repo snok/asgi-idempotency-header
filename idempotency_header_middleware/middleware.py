@@ -1,8 +1,8 @@
 import json
 from collections import namedtuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from json import JSONDecodeError
-from typing import Any, Union
+from typing import Any, List, Union
 from uuid import UUID
 
 from starlette.datastructures import Headers
@@ -29,12 +29,13 @@ class IdempotencyHeaderMiddleware:
     idempotency_header_key: str = 'Idempotency-Key'
     replay_header_key: str = 'Idempotent-Replayed'
     enforce_uuid4_formatting: bool = False
+    applicable_methods: List[str] = field(default_factory=lambda: ['POST', 'PATCH'])
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Union[JSONResponse, Any]:
         """
         Enable idempotent operations in POST and PATCH endpoints.
         """
-        if scope['type'] != 'http' or scope['method'] not in ['POST', 'PATCH']:
+        if scope['type'] != 'http' or scope['method'] not in self.applicable_methods:
             return await self.app(scope, receive, send)
 
         request_headers = Headers(scope=scope)
