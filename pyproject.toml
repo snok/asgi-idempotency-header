@@ -8,16 +8,8 @@ readme = 'README.md'
 homepage = 'https://github.com/sondrelg/asgi-idempotency-header'
 repository = 'https://github.com/sondrelg/asgi-idempotency-header'
 keywords = [
-    'idempotence',
-    'idempotency',
-    'header',
-    'fastapi',
-    'starlette',
-    'asgi',
-    'middleware',
-    'api',
-    'endpoint',
-    'http'
+    'idempotence', 'idempotency', 'header', 'fastapi', 'starlette', 'asgi',
+    'middleware', 'api', 'endpoint', 'http'
 ]
 classifiers = [
     'Development Status :: 4 - Beta',
