@@ -5,12 +5,13 @@
 
 # Idempotency Header ASGI Middleware
 
-A middleware for making `POST` and `PATCH` endpoints idempotent.
+A middleware for making endpoints idempotent.
 
 The purpose of the middleware is to guarantee that execution of mutating endpoints happens exactly once,
 regardless of the number of requests.
 We achieve this by caching responses, and returning already-saved responses to the user on repeated requests.
 Responses are only cached when an idempotency-key HTTP header is present, so clients must opt-into this behaviour.
+Additionally, only configured HTTP methods (by default, `POST` and `PATCH`) that return JSON payloads are cached and replayed.
 
 This is largely modelled after [stripe' implementation](https://stripe.com/docs/api/idempotent_requests).
 
@@ -84,6 +85,7 @@ IdempotencyHeaderMiddleware(
     replay_header_key='Idempotent-Replayed',
     enforce_uuid4_formatting=False,
     expiry=60 * 60 * 24,
+    applicable_methods=['POST', 'PATCH']
 )
 ```
 
@@ -111,7 +113,8 @@ the existing ones.
 idempotency_header_key: str = 'Idempotency-Key'
 ```
 
-The idempotency header key is the header value to check for. When present, the middleware is used.
+The idempotency header key is the header value to check for. When present, the middleware will be used if the HTTP
+method is in the [applicable methods](#applicable-methods).
 
 The default value is `"Idempotency-Key"`, but it can be defined as any string.
 
@@ -149,6 +152,16 @@ expiry: int = 60 * 60 * 24
 
 How long to cache responses for, measured in seconds. Set to 24 hours by default.
 
+### Applicable Methods
+
+```python
+applicable_methods=['POST', 'PATCH']
+```
+
+What HTTP methods to consider for idempotency. If the request method is one of the methods in this list, and the
+[idempotency header](#idempotency-header-key) is sent, the middleware will be used. By default, only `POST`
+and `PATCH` methods are cached and replayed.
+
 ## Quick summary of behaviours
 
 Briefly summarized, this is how the middleware functions:
@@ -160,4 +173,5 @@ Briefly summarized, this is how the middleware functions:
   the first request has finished, the middleware will return a 409, informing the user that a request
   is being processed, and that we cannot handle the second request.
 - The middleware only handles HTTP requests.
-- The middleware only handles requests with `POST` and `PATCH` methods. Other HTTP methods are idempotent by default.
+- By default, the middleware only handles requests with `POST` and `PATCH` methods. Other HTTP methods skip this middleware.
+- Only valid JSON responses with `content-type` == `application/json` are cached.
