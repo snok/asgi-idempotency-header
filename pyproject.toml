@@ -40,6 +40,7 @@ python = '^3.8'
 fastapi = { version = '^0.70.0', optional = true }
 starlette = { version = '*', optional = true }
 redis = { version = '^4.2', optional = true }
+lupa = { version = '*', optional = true }  # needed for aioredis locks
 
 [tool.poetry.dev-dependencies]
 pytest = '*'
@@ -51,7 +52,6 @@ pytest-asyncio = '*'
 orjson = '*'
 ujson = '*'
 fakeredis = '*'
-types-redis = "^4.3.17"
 
 [tool.poetry.extras]
 fastapi = ['fastapi']
