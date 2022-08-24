@@ -2,19 +2,15 @@ import json
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
-from aioredis.client import Redis
-from aioredis.exceptions import LockError
 from fastapi.responses import JSONResponse
+from redis.asyncio import Redis
+from redis.exceptions import LockError
 
 from idempotency_header_middleware.backends.base import Backend
 
 
 @dataclass()
-class AioredisBackend(Backend):
-    """
-    Redis backend.
-    """
-
+class RedisBackend(Backend):
     expiry: Optional[int] = 60 * 60 * 24
 
     def __init__(
@@ -40,7 +36,7 @@ class AioredisBackend(Backend):
         else:
             status_code = await self.redis.get(status_code_key)
 
-        return JSONResponse(json.loads(payload), status_code=int(status_code))
+        return JSONResponse(json.loads(payload), status_code=int(status_code))  # type: ignore[arg-type]
 
     async def store_response_data(self, idempotency_key: str, payload: dict, status_code: int) -> None:
         """

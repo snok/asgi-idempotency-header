@@ -32,10 +32,10 @@ Add the middleware to your app like this:
 from fastapi import FastAPI
 
 from idempotency_header_middleware import IdempotencyHeaderMiddleware
-from idempotency_header_middleware.backends import AioredisBackend
+from idempotency_header_middleware.backends import RedisBackend
 
 
-backend = AioredisBackend(redis=redis)
+backend = RedisBackend(redis=redis)
 
 app = FastAPI()
 app.add_middleware(IdempotencyHeaderMiddleware(backend=backend))
@@ -48,10 +48,10 @@ from fastapi import FastAPI
 from fastapi.middleware import Middleware
 
 from idempotency_header_middleware import IdempotencyHeaderMiddleware
-from idempotency_header_middleware.backends import AioredisBackend
+from idempotency_header_middleware.backends import RedisBackend
 
 
-backend = AioredisBackend(redis=redis)
+backend = RedisBackend(redis=redis)
 
 app = FastAPI(
     middleware=[
@@ -73,11 +73,11 @@ The middleware takes a few arguments. A full example looks like this:
 from aioredis import from_url
 
 from idempotency_header_middleware import IdempotencyHeaderMiddleware
-from idempotency_header_middleware.backends import AioredisBackend
+from idempotency_header_middleware.backends import RedisBackend
 
 
 redis = from_url(redis_url)
-backend = AioredisBackend(redis=redis)
+backend = RedisBackend(redis=redis)
 
 IdempotencyHeaderMiddleware(
     backend,
@@ -94,9 +94,9 @@ The following section describes each argument:
 ### Backend
 
 ```python
-from idempotency_header_middleware.backends import AioredisBackend, MemoryBackend
+from idempotency_header_middleware.backends import RedisBackend, MemoryBackend
 
-backend: Union[AioredisBackend, MemoryBackend]
+backend: Union[RedisBackend, MemoryBackend]
 ```
 
 The backend is the only required argument, as it defines **how** and **where** to store a response.
