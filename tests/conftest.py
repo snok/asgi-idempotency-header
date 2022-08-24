@@ -1,13 +1,13 @@
 import asyncio
 import json
 import logging
+from logging.config import dictConfig
 from pathlib import Path
 
 import fakeredis.aioredis
 import pytest
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse, UJSONResponse
-from httpx import AsyncClient
 from starlette.responses import (
     FileResponse,
     HTMLResponse,
@@ -18,12 +18,42 @@ from starlette.responses import (
     StreamingResponse,
 )
 
-from idempotency_header_middleware.backends.aioredis import AioredisBackend
+from idempotency_header_middleware.backends.redis import RedisBackend
 from idempotency_header_middleware.middleware import IdempotencyHeaderMiddleware
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler())
+
+
+@pytest.fixture(autouse=True, scope='session')
+def _configure_logging():
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'filters': {},
+        'formatters': {
+            'full': {
+                'class': 'logging.Formatter',
+                'datefmt': '%H:%M:%S',
+                'format': '%(message)s',
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'full',
+            },
+        },
+        'loggers': {
+            # project logger
+            '': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+        },
+    }
+    dictConfig(LOGGING)
+
 
 app = FastAPI()
 
@@ -44,7 +74,7 @@ def app_with_middleware(method_config):
     app.add_middleware(
         IdempotencyHeaderMiddleware,
         enforce_uuid4_formatting=True,
-        backend=AioredisBackend(redis=fakeredis.aioredis.FakeRedis(decode_responses=True)),
+        backend=RedisBackend(redis=fakeredis.aioredis.FakeRedis(decode_responses=True)),
         applicable_methods=method_config['setting'],
     )
     yield app
@@ -193,12 +223,6 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
-
-
-@pytest.fixture(scope='module')
-async def client() -> AsyncClient:
-    async with AsyncClient(app=app, base_url='http://test') as client:
-        yield client
 
 
 @pytest.fixture(params=['post', 'patch', 'put'])

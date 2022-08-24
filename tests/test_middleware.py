@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient, Response
 
-from tests.conftest import dummy_response
+from tests.conftest import app, dummy_response
 
 pytestmark = pytest.mark.asyncio
 
@@ -91,25 +91,27 @@ async def test_idempotent_method(inapplicable_method: http_call) -> None:
     assert second_response.headers == {}
 
 
-async def test_multiple_concurrent_requests(client: AsyncClient, caplog) -> None:
-    id_ = str(uuid4())
+async def test_multiple_concurrent_requests(caplog) -> None:
+    async with AsyncClient(app=app, base_url='http://test') as client:
+        id_ = str(uuid4())
 
-    async def fire_request():
-        return await client.post('/slow-endpoint', headers={'Idempotency-key': id_})
+        async def fire_request():
+            return await client.post('/slow-endpoint', headers={'Idempotency-key': id_})
 
-    response1, response2 = await asyncio.gather(
-        *[asyncio.create_task(fire_request()), asyncio.create_task(fire_request())]
-    )
+        response1, response2 = await asyncio.gather(
+            *[asyncio.create_task(fire_request()), asyncio.create_task(fire_request())]
+        )
 
-    assert response1.status_code == 200
-    assert response2.status_code == 409
+        assert response1.status_code == 200
+        assert response2.status_code == 409
 
 
 bad_header_values = ['test', uuid4().hex[:-1] + 'u', '123', 'ssssssssssssssssssss']
 
 
 @pytest.mark.parametrize('value', bad_header_values)
-async def test_bad_header_formatting(client: AsyncClient, value: str) -> None:
-    response = await client.post('/json-response', headers={'Idempotency-key': value})
-    assert response.json() == {'detail': "'Idempotency-Key' header value must be formatted as a v4 UUID"}
-    assert response.status_code == 422
+async def test_bad_header_formatting(value: str) -> None:
+    async with AsyncClient(app=app, base_url='http://test') as client:
+        response = await client.post('/json-response', headers={'Idempotency-key': value})
+        assert response.json() == {'detail': "'Idempotency-Key' header value must be formatted as a v4 UUID"}
+        assert response.status_code == 422
