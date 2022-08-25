@@ -5,6 +5,7 @@ from pathlib import Path
 
 import fakeredis.aioredis
 import pytest
+import pytest_asyncio
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse, UJSONResponse
 from httpx import AsyncClient
@@ -195,7 +196,7 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture(scope='module')
+@pytest_asyncio.fixture(scope='module')
 async def client() -> AsyncClient:
     async with AsyncClient(app=app, base_url='http://test') as client:
         yield client
