@@ -18,7 +18,7 @@ from starlette.responses import (
     StreamingResponse,
 )
 
-from idempotency_header_middleware.backends.aioredis import AioredisBackend
+from idempotency_header_middleware.backends.redis import RedisBackend
 from idempotency_header_middleware.middleware import IdempotencyHeaderMiddleware
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def app_with_middleware(method_config):
     app.add_middleware(
         IdempotencyHeaderMiddleware,
         enforce_uuid4_formatting=True,
-        backend=AioredisBackend(redis=fakeredis.aioredis.FakeRedis(decode_responses=True)),
+        backend=RedisBackend(redis=fakeredis.aioredis.FakeRedis(decode_responses=True)),
         applicable_methods=method_config['setting'],
     )
     yield app

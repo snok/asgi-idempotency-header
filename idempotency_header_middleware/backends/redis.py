@@ -2,15 +2,15 @@ import json
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
-from aioredis.client import Redis
-from aioredis.exceptions import LockError
 from fastapi.responses import JSONResponse
+from redis.asyncio.client import Redis
+from redis.exceptions import LockError
 
 from idempotency_header_middleware.backends.base import Backend
 
 
 @dataclass()
-class AioredisBackend(Backend):
+class RedisBackend(Backend):
     """
     Redis backend.
     """
@@ -35,10 +35,10 @@ class AioredisBackend(Backend):
         """
         payload_key, status_code_key = self._get_keys(idempotency_key)
 
-        if not (payload := await self.redis.get(payload_key)):
+        payload = await self.redis.get(payload_key)
+        status_code = await self.redis.get(status_code_key)
+        if not (payload and status_code):
             return None
-        else:
-            status_code = await self.redis.get(status_code_key)
 
         return JSONResponse(json.loads(payload), status_code=int(status_code))
 
