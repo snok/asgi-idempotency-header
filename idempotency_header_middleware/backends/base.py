@@ -12,14 +12,14 @@ class Backend(ABC):
         """
         Return a stored response if it exists, otherwise return None.
         """
-        raise NotImplementedError()
+        ...
 
     @abstractmethod
     async def store_response_data(self, idempotency_key: str, payload: dict, status_code: int) -> None:
         """
         Store a response to an appropriate backend (redis, postgres, etc.).
         """
-        raise NotImplementedError()
+        ...
 
     @abstractmethod
     async def store_idempotency_key(self, idempotency_key: str) -> bool:
@@ -34,7 +34,7 @@ class Backend(ABC):
         All implementations of this most likely will want to implement some locking
         mechanism to prevent race conditions and double execution.
         """
-        raise NotImplementedError()
+        ...
 
     @abstractmethod
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
@@ -44,4 +44,4 @@ class Backend(ABC):
         Once a request has been completed, we should pop the idempotency
         key stored in 'store_idempotency_key'.
         """
-        raise NotImplementedError()
+        ...

@@ -1,4 +1,5 @@
 import json
+import logging
 from collections import namedtuple
 from dataclasses import dataclass, field
 from json import JSONDecodeError
@@ -10,6 +11,8 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from idempotency_header_middleware.backends.base import Backend
+
+logger = logging.getLogger(__name__)
 
 
 def is_valid_uuid(uuid_: str) -> bool:
@@ -38,13 +41,10 @@ class IdempotencyHeaderMiddleware:
         if scope['type'] != 'http' or scope['method'] not in self.applicable_methods:
             return await self.app(scope, receive, send)
 
-        request_headers = Headers(scope=scope)
-        idempotency_key = request_headers.get(self.idempotency_header_key.lower())
-
-        if not idempotency_key:
+        if not (idempotency_key := Headers(scope=scope).get(self.idempotency_header_key.lower())):
             return await self.app(scope, receive, send)
 
-        elif self.enforce_uuid4_formatting and not is_valid_uuid(idempotency_key):
+        if self.enforce_uuid4_formatting and not is_valid_uuid(idempotency_key):
             payload = {'detail': f"'{self.idempotency_header_key}' header value must be formatted as a v4 UUID"}
             response = JSONResponse(payload, 422)
             return await response(scope, receive, send)
@@ -53,9 +53,8 @@ class IdempotencyHeaderMiddleware:
             stored_response.headers[self.replay_header_key] = 'true'
             return await stored_response(scope, receive, send)
 
-        request_already_pending = await self.backend.store_idempotency_key(idempotency_key)
-
-        if request_already_pending:
+        # Check if request is already pending
+        if await self.backend.store_idempotency_key(idempotency_key):
             payload = {'detail': f"Request already pending for idempotency key '{idempotency_key}'"}
             response = JSONResponse(payload, 409)
             return await response(scope, receive, send)
@@ -66,7 +65,7 @@ class IdempotencyHeaderMiddleware:
         async def send_wrapper(message: Message) -> None:
             if message['type'] == 'http.response.start':
                 response_state.status_code = message['status']
-                response_state.response_headers = Headers({k.decode(): v.decode() for (k, v) in message['headers']})
+                response_state.response_headers = Headers(scope=message)
 
             elif message['type'] == 'http.response.body':
                 if (
@@ -79,7 +78,8 @@ class IdempotencyHeaderMiddleware:
 
                 try:
                     json_payload = json.loads(message['body'])
-                except JSONDecodeError:
+                except JSONDecodeError as e:
+                    logger.info('Failed to save JSON response: %s', e)
                     await self.backend.clear_idempotency_key(idempotency_key)
                     await send(message)
                     return
@@ -89,7 +89,6 @@ class IdempotencyHeaderMiddleware:
                     payload=json_payload,
                     status_code=response_state.status_code,
                 )
-                await self.backend.clear_idempotency_key(idempotency_key)
 
             await send(message)
 

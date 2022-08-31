@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    reviewers:
+      - sondrelg
+
+  - package-ecosystem: pip
+    directory: /
+    versioning-strategy: lockfile-only
+    open-pull-requests-limit: 4
+    target-branch: master
+    schedule:
+      interval: daily
+    reviewers:
+      - sondrelg
