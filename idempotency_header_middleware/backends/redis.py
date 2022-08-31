@@ -10,14 +10,17 @@ from idempotency_header_middleware.backends.base import Backend
 
 @dataclass()
 class RedisBackend(Backend):
-    expiry: Optional[int] = 60 * 60 * 24
-
     def __init__(
-        self, redis: Redis, keys_key: str = 'idempotency-key-keys', response_key: str = 'idempotency-key-responses'
+        self,
+        redis: Redis,
+        keys_key: str = 'idempotency-key-keys',
+        response_key: str = 'idempotency-key-responses',
+        expiry: int = 60 * 60 * 24,
     ):
         self.redis = redis
         self.KEYS_KEY = keys_key
         self.RESPONSE_KEY = response_key
+        self.expiry = expiry
 
     def _get_keys(self, idempotency_key: str) -> Tuple[str, str]:
         payload_key = self.RESPONSE_KEY + idempotency_key
@@ -54,7 +57,7 @@ class RedisBackend(Backend):
         """
         Store an idempotency key header value in a set.
         """
-        return bool(await self.redis.sadd(self.KEYS_KEY, idempotency_key))
+        return not bool(await self.redis.sadd(self.KEYS_KEY, idempotency_key))
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """

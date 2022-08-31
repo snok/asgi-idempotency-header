@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'asgi-idempotency-header'
-version = '0.1.1'
+version = '0.2.0'
 description = 'Enable idempotent operations in POST and PATCH endpoints.'
 authors = ['Sondre Lillebø Gundersen <sondrelg@live.no>']
 license = 'BSD-3'
@@ -40,7 +40,7 @@ python = '^3.8'
 fastapi = { version = '^0.70.0', optional = true }
 starlette = { version = '*', optional = true }
 redis = { version = '^4.2', optional = true }
-lupa = { version = '*', optional = true }  # needed for aioredis locks
+lupa = { version = '*', optional = true }  # needed for redis locks
 
 [tool.poetry.dev-dependencies]
 pytest = '*'
@@ -56,8 +56,8 @@ fakeredis = '*'
 [tool.poetry.extras]
 fastapi = ['fastapi']
 starlette = ['starlette']
-aioredis = ['aioredis', 'lupa']
-all = ['aioredis', 'lupa', 'fastapi', 'starlette']
+redis = ['redis', 'lupa']
+all = ['redis', 'lupa', 'fastapi', 'starlette']
 
 [build-system]
 requires = ['poetry-core>=1.0.0']

@@ -28,7 +28,7 @@ def test_base_backend():
 redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
 
 
-@pytest.mark.parametrize('backend', [RedisBackend(redis), MemoryBackend()])
+@pytest.mark.parametrize('backend', [RedisBackend(redis, expiry=1), MemoryBackend(expiry=1)])
 async def test_backend(backend: Backend):
     assert issubclass(backend.__class__, Backend)
 
@@ -50,7 +50,6 @@ async def test_backend(backend: Backend):
     assert stored_response.body == b'{"test":"test"}'
 
     # Test fetching data after expiry
-    backend.expiry = 1
     await backend.store_response_data(id_, dummy_response, 201)
     await asyncio.sleep(1)
     assert (await backend.get_stored_response(id_)) is None

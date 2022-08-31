@@ -6,8 +6,10 @@ from pathlib import Path
 
 import fakeredis.aioredis
 import pytest
+import pytest_asyncio
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse, UJSONResponse
+from httpx import AsyncClient
 from starlette.responses import (
     FileResponse,
     HTMLResponse,
@@ -223,6 +225,12 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest_asyncio.fixture(scope='module')
+async def client() -> AsyncClient:
+    async with AsyncClient(app=app, base_url='http://test') as client:
+        yield client
 
 
 @pytest.fixture(params=['post', 'patch', 'put'])
