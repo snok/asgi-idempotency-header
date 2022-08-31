@@ -3,6 +3,7 @@ name = 'asgi-idempotency-header'
 version = '0.2.0'
 description = 'Enable idempotent operations in POST and PATCH endpoints.'
 authors = ['Sondre Lillebø Gundersen <sondrelg@live.no>']
+maintainers = ["Patrick Gleeson <pgleeson@spoton.com>"]
 license = 'BSD-3'
 readme = 'README.md'
 homepage = 'https://github.com/sondrelg/asgi-idempotency-header'
