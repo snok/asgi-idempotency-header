@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'asgi-idempotency-header'
-version = '0.2.0'
+version = '0.2.0-rc.1'
 description = 'Enable idempotent operations for your endpoints.'
 authors = ['Sondre Lillebø Gundersen <sondrelg@live.no>']
 maintainers = ["Patrick Gleeson <pgleeson@spoton.com>"]
