@@ -6,8 +6,8 @@ authors = ['Sondre Lillebø Gundersen <sondrelg@live.no>']
 maintainers = ["Patrick Gleeson <pgleeson@spoton.com>"]
 license = 'BSD-3'
 readme = 'README.md'
-homepage = 'https://github.com/sondrelg/asgi-idempotency-header'
-repository = 'https://github.com/sondrelg/asgi-idempotency-header'
+homepage = 'https://github.com/snok/asgi-idempotency-header'
+repository = 'https://github.com/snok/asgi-idempotency-header'
 keywords = [
     'idempotence', 'idempotency', 'header', 'fastapi', 'starlette', 'asgi',
     'middleware', 'api', 'endpoint', 'http'
