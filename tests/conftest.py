@@ -20,6 +20,7 @@ from starlette.responses import (
     StreamingResponse,
 )
 
+from idempotency_header_middleware.backends.base import DEFAULT_EXPIRY
 from idempotency_header_middleware.backends.redis import RedisBackend
 from idempotency_header_middleware.middleware import IdempotencyHeaderMiddleware
 
@@ -70,13 +71,22 @@ method_configs = {
 def method_config(request):
     return request.param
 
+expirations = {
+    'default': DEFAULT_EXPIRY,
+    'immediately': 0,
+}
+
+@pytest.fixture(scope='session', ids=expirations.keys(), params=expirations.values())
+def expiry(request):
+    return request.param
+
 
 @pytest.fixture(scope='session', autouse=True)
-def app_with_middleware(method_config):
+def app_with_middleware(method_config, expiry):
     app.add_middleware(
         IdempotencyHeaderMiddleware,
         enforce_uuid4_formatting=True,
-        backend=RedisBackend(redis=fakeredis.aioredis.FakeRedis(decode_responses=True)),
+        backend=RedisBackend(redis=fakeredis.aioredis.FakeRedis(decode_responses=True), expiry=expiry),
         applicable_methods=method_config['setting'],
     )
     yield app

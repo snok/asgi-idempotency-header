@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Set
 
 from starlette.responses import JSONResponse
 
-from idempotency_header_middleware.backends.base import Backend
+from idempotency_header_middleware.backends.base import Backend, DEFAULT_EXPIRY
 
 
 @dataclass()
@@ -19,7 +19,7 @@ class MemoryBackend(Backend):
     The backend is mainly here for local development or testing.
     """
 
-    expiry: Optional[int] = 60 * 60 * 24
+    expiry: Optional[int] = DEFAULT_EXPIRY
 
     response_store: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     keys: Set[str] = field(default_factory=set)
