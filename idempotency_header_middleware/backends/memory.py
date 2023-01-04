@@ -1,6 +1,6 @@
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
 
 from starlette.responses import JSONResponse
 
@@ -22,7 +22,7 @@ class MemoryBackend(Backend):
     expiry: Optional[int] = 60 * 60 * 24
 
     response_store: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    idempotency_keys: Dict[str, Optional[int]] = field(default_factory=dict)
+    idempotency_keys: Dict[str, Optional[float]] = field(default_factory=dict)
 
     async def get_stored_response(self, idempotency_key: str) -> Optional[JSONResponse]:
         """
@@ -54,10 +54,10 @@ class MemoryBackend(Backend):
         """
         Store an idempotency key header value in a set.
         """
-        if idempotency_key in self.idempotency_keys.keys():
+        if idempotency_key in self.idempotency_keys:
             return True
 
-        self.idempotency_keys[idempotency_key] = time.time() + self.expiry if self.expiry else None
+        self.idempotency_keys[idempotency_key] = time.time() + float(self.expiry or 0) if self.expiry else None
         return False
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
@@ -76,6 +76,5 @@ class MemoryBackend(Backend):
 
         now = time.time()
         for idempotency_key in list(self.idempotency_keys):
-            if expiry := self.idempotency_keys.get(idempotency_key):
-                if expiry <= now:
-                    del self.idempotency_keys[idempotency_key]
+            if (expiry := self.idempotency_keys.get(idempotency_key)) and expiry <= now:
+                del self.idempotency_keys[idempotency_key]

@@ -5,8 +5,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient, Response
 
-from tests.conftest import app, dummy_response, pytestmark
-
+from tests.conftest import app, dummy_response, pytestmark # noqa: F401
 http_call = Callable[..., Awaitable[Response]]
 
 

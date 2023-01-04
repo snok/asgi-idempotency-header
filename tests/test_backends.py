@@ -7,9 +7,7 @@ import pytest
 from idempotency_header_middleware.backends.base import Backend
 from idempotency_header_middleware.backends.memory import MemoryBackend
 from idempotency_header_middleware.backends.redis import RedisBackend
-from tests.conftest import dummy_response
-
-pytestmark = pytest.mark.asyncio
+from tests.conftest import dummy_response, pytestmark # noqa: F401
 
 base_methods = [
     'get_stored_response',

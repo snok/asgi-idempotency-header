@@ -58,7 +58,7 @@ class RedisBackend(Backend):
         """
         Store an idempotency key header value in a sortedset.
         """
-        return not bool(await self.redis.zadd(self.KEYS_KEY, {idempotency_key: time.time() + self.expiry},))
+        return not bool(await self.redis.zadd(self.KEYS_KEY, {idempotency_key: time.time() + float(self.expiry or 0)},))
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
