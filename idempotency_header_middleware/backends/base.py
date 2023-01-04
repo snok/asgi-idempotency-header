@@ -3,10 +3,9 @@ from typing import Optional
 
 from starlette.responses import Response
 
-DEFAULT_EXPIRY = 60 * 60 * 24
 
 class Backend(ABC):
-    expiry: Optional[int] = DEFAULT_EXPIRY
+    expiry: Optional[int] = 60 * 60 * 24
 
     @abstractmethod
     async def get_stored_response(self, idempotency_key: str) -> Optional[Response]:

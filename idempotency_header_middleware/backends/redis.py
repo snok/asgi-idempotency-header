@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 from fastapi.responses import JSONResponse
 from redis.asyncio import Redis
 
-from idempotency_header_middleware.backends.base import Backend, DEFAULT_EXPIRY
+from idempotency_header_middleware.backends.base import Backend
 
 
 @dataclass()
@@ -15,7 +15,7 @@ class RedisBackend(Backend):
         redis: Redis,
         keys_key: str = 'idempotency-key-keys',
         response_key: str = 'idempotency-key-responses',
-        expiry: int = DEFAULT_EXPIRY,
+        expiry: int = 60 * 60 * 24,
     ):
         self.redis = redis
         self.KEYS_KEY = keys_key
@@ -49,7 +49,7 @@ class RedisBackend(Backend):
         await self.redis.set(payload_key, json.dumps(payload))
         await self.redis.set(status_code_key, status_code)
 
-        if self.expiry >= 0:
+        if self.expiry:
             await self.redis.expire(payload_key, self.expiry)
             await self.redis.expire(status_code_key, self.expiry)
 
