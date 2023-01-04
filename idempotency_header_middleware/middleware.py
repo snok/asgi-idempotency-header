@@ -49,6 +49,7 @@ class IdempotencyHeaderMiddleware:
             response = JSONResponse(payload, 422)
             return await response(scope, receive, send)
 
+        await self.backend.expire_idempotency_keys()
         if stored_response := await self.backend.get_stored_response(idempotency_key):
             stored_response.headers[self.replay_header_key] = 'true'
             return await stored_response(scope, receive, send)

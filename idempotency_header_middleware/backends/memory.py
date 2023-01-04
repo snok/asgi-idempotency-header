@@ -22,7 +22,7 @@ class MemoryBackend(Backend):
     expiry: Optional[int] = 60 * 60 * 24
 
     response_store: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    keys: Set[str] = field(default_factory=set)
+    idempotency_keys: Dict[str, Optional[int]] = field(default_factory=dict)
 
     async def get_stored_response(self, idempotency_key: str) -> Optional[JSONResponse]:
         """
@@ -54,14 +54,28 @@ class MemoryBackend(Backend):
         """
         Store an idempotency key header value in a set.
         """
-        if idempotency_key in self.keys:
+        if idempotency_key in self.idempotency_keys.keys():
             return True
 
-        self.keys.add(idempotency_key)
+        self.idempotency_keys[idempotency_key] = time.time() + self.expiry if self.expiry else None
         return False
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
         Remove an idempotency header value from the set.
         """
-        self.keys.remove(idempotency_key)
+        del self.idempotency_keys[idempotency_key]
+
+    async def expire_idempotency_keys(self) -> None:
+        """
+        Remove any expired idempotency keys to avoid returning 409s
+        after the response expires.
+        """
+        if not self.expiry:
+            return
+
+        now = time.time()
+        for idempotency_key in list(self.idempotency_keys):
+            if expiry := self.idempotency_keys.get(idempotency_key):
+                if expiry <= now:
+                    del self.idempotency_keys[idempotency_key]

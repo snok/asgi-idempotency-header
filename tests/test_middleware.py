@@ -5,9 +5,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient, Response
 
-from tests.conftest import app, dummy_response
-
-pytestmark = pytest.mark.asyncio
+from tests.conftest import app, dummy_response, pytestmark
 
 http_call = Callable[..., Awaitable[Response]]
 

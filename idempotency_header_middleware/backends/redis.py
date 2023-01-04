@@ -1,3 +1,4 @@
+import time
 import json
 from dataclasses import dataclass
 from typing import Optional, Tuple
@@ -55,12 +56,20 @@ class RedisBackend(Backend):
 
     async def store_idempotency_key(self, idempotency_key: str) -> bool:
         """
-        Store an idempotency key header value in a set.
+        Store an idempotency key header value in a sortedset.
         """
-        return not bool(await self.redis.sadd(self.KEYS_KEY, idempotency_key))
+        return not bool(await self.redis.zadd(self.KEYS_KEY, {idempotency_key: time.time() + self.expiry},))
 
     async def clear_idempotency_key(self, idempotency_key: str) -> None:
         """
         Remove an idempotency header value from the set.
         """
-        await self.redis.srem(self.KEYS_KEY, idempotency_key)
+        await self.redis.zrem(self.KEYS_KEY, idempotency_key)
+
+    async def expire_idempotency_keys(self) -> None:
+        """
+        Remove any expired idempotency keys to avoid returning 409s
+        after the response expires.
+        """
+        if self.expiry:
+            await self.redis.zremrangebyscore(self.KEYS_KEY, '-inf', time.time())
