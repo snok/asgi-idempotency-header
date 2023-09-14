@@ -71,7 +71,7 @@ jobs:
           source .venv/bin/activate
           pytest --cov=asgi_correlation_id tests/ --cov-report=xml
           coverage report
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           fail_ci_if_error: true
