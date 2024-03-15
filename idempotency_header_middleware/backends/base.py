@@ -45,3 +45,11 @@ class Backend(ABC):
         key stored in 'store_idempotency_key'.
         """
         ...
+
+    @abstractmethod
+    async def expire_idempotency_keys(self) -> None:
+        """
+        Remove any expired idempotency keys to avoid returning 409s
+        after the response expires.
+        """
+        ...

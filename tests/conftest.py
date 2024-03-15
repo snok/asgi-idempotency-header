@@ -25,6 +25,8 @@ from idempotency_header_middleware.middleware import IdempotencyHeaderMiddleware
 
 logger = logging.getLogger(__name__)
 
+pytestmark = pytest.mark.asyncio
+
 
 @pytest.fixture(autouse=True, scope='session')
 def _configure_logging():
